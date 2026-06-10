@@ -390,8 +390,8 @@ export function uiFrame(): void {
     ($('hud-xp-fill') as HTMLElement).style.width = '0%';
   }
 
-  $('hud-death-yield').textContent =
-    run ? `✦ ${fmt(game.deathYield())} on death` : '';
+  $('cur-souls-pending').textContent =
+    run ? `+${fmt(game.deathYield())}` : '';
 
   const autoBtn = $('btn-auto');
   if (!game.autoUnlocked()) {
@@ -572,8 +572,8 @@ function gearLine(slot: 'weapon' | 'armor' | 'charm', item: Item | null): string
     <div class="gear-slot">
       <span class="gear-kind">${slotNames[slot]}
         <button class="btn tiny" data-act="unequip" data-id="${slot}" data-tip="Unequip into the satchel">▼</button>
-        <button class="btn tiny ${item.locked ? 'toggle on' : ''}" data-act="lock-toggle" data-id="${slot}"
-          data-tip="${item.locked ? 'Locked: auto-equip will never replace this. Click to unlock.' : 'Lock this item so auto-equip can never replace it.'}">${item.locked ? '🔒' : '🔓'}</button>
+        ${game.qolUnlocked('seal') ? `<button class="btn tiny ${item.locked ? 'toggle on' : ''}" data-act="lock-toggle" data-id="${slot}"
+          data-tip="${item.locked ? 'Locked: auto-equip will never replace this. Click to unlock.' : 'Lock this item so auto-equip can never replace it.'}">${item.locked ? '🔒' : '🔓'}</button>` : ''}
       </span>
       <span class="gear-name${rCls(item)}" style="${rStyle(item)}" data-tip="${itemTip(item)}">${esc(item.name)} ${kindChip(item)}</span>
       <span class="gear-stats">${describeItem(item).join(' · ')}</span>
@@ -616,8 +616,8 @@ function satchelSection(): string {
     <div class="satchel-bar">
       <button class="btn tiny toggle ${s.settings.autoEquip ? 'on' : ''}" data-act="toggle-autoequip"
         data-tip="When on, looted items the vessel can wield are equipped automatically when clearly better (+5%).">auto-equip ${s.settings.autoEquip ? 'ON' : 'OFF'}</button>
-      <button class="btn tiny ${s.settings.autoSalvageBelow > 0 ? 'toggle on' : ''}" data-act="cycle-autosalvage"
-        data-tip="Unequipped loot below this rarity is scrapped on pickup instead of cluttering the satchel. Protected rarities are always safe. Set to 'everything' (with protect: nothing) and the satchel stays empty.">auto-scrap: ${SALVAGE_MODES[s.settings.autoSalvageBelow]}</button>
+      ${game.qolUnlocked('tithe') ? `<button class="btn tiny ${s.settings.autoSalvageBelow > 0 ? 'toggle on' : ''}" data-act="cycle-autosalvage"
+        data-tip="Unequipped loot below this rarity is scrapped on pickup instead of cluttering the satchel. Protected rarities are always safe. Set to 'everything' (with protect: nothing) and the satchel stays empty.">auto-scrap: ${SALVAGE_MODES[s.settings.autoSalvageBelow]}</button>` : ''}
       <button class="btn tiny" data-act="cycle-protect"
         data-tip="Items at or above this rarity are never auto-scrapped — not by overflow, not by auto-scrap, not by salvage-all. 'Nothing' protects nothing: even legendaries burn.">protect: ${PROTECT_MODES[s.settings.protectRarity]}</button>
       ${inv.length > 0 ? `<button class="btn tiny danger" data-act="inv-salvage-all" data-tip="Scrap the whole satchel (protected rarities stay).">salvage all</button>` : ''}
@@ -705,7 +705,7 @@ function panelVessel(): string {
     ${satchelSection()}
 
     <h3>Procession</h3>
-    ${MINIONS.some((m) => (s.minions[m.id]?.level ?? 0) > 0) ? `
+    ${MINIONS.some((m) => (s.minions[m.id]?.level ?? 0) > 0) && game.qolUnlocked('sexton') ? `
     <div class="satchel-bar">
       <button class="btn tiny toggle ${s.settings.autoMend ? 'on' : ''}" data-act="toggle-automend"
         data-tip="Automatically spend bones to re-raise fallen minions mid-run.">auto-mend ${s.settings.autoMend ? 'ON' : 'OFF'}</button>
@@ -884,10 +884,10 @@ function panelSettings(): string {
     ${toggle('Damage numbers', s.settings.particles, 'toggle-particles')}
     ${toggle('Auto-equip loot', s.settings.autoEquip, 'toggle-autoequip',
       'When on, looted items the vessel can wield are equipped automatically when clearly better (+5%).')}
-    <div class="setting-row" data-tip="Unequipped loot below this rarity is scrapped on pickup. Protected rarities are always safe.">
+    ${game.qolUnlocked('tithe') ? `<div class="setting-row" data-tip="Unequipped loot below this rarity is scrapped on pickup. Protected rarities are always safe.">
       <span>Auto-scrap loot below</span>
       <button class="btn" data-act="cycle-autosalvage">${SALVAGE_MODES[s.settings.autoSalvageBelow]}</button>
-    </div>
+    </div>` : ''}
     <div class="setting-row" data-tip="Items at or above this rarity are never auto-scrapped — not by overflow, not by auto-scrap, not by salvage-all.">
       <span>Protect rarity</span>
       <button class="btn" data-act="cycle-protect">${PROTECT_MODES[s.settings.protectRarity]}</button>

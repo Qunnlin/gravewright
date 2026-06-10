@@ -79,11 +79,17 @@ describe('equipment locks', () => {
     stats: { atk }, score: atk * 2, kind: 'blade', locked,
   });
 
-  it('auto-equip never replaces a locked item', () => {
+  it('auto-equip never replaces a locked item (lock needs the Seal)', () => {
     seedRng(43);
     const game = freshGame();
     game.acquireItem(mk('Cherished Blade', 10));
     expect(game.state.run!.gear.weapon?.name).toBe('Cherished Blade');
+
+    // without the Quartermaster's Seal, locking is refused
+    game.toggleLock('weapon');
+    expect(game.state.run!.gear.weapon?.locked).toBeFalsy();
+
+    game.state.upgrades['seal'] = 1;
     game.toggleLock('weapon');
     expect(game.state.run!.gear.weapon?.locked).toBe(true);
 
@@ -133,8 +139,13 @@ describe('auto-mend', () => {
     for (let i = 0; i < 16; i++) game.tick(250);
     expect(st.alive).toBe(false);
 
-    // on: mended within the automaton cadence
+    // setting on but the Sexton not bought: still dead (essence gate)
     game.state.settings.autoMend = true;
+    for (let i = 0; i < 16; i++) game.tick(250);
+    expect(st.alive).toBe(false);
+
+    // Sexton owned: mended within the automaton cadence
+    game.state.upgrades['sexton'] = 1;
     for (let i = 0; i < 16; i++) game.tick(250);
     expect(st.alive).toBe(true);
     expect(st.hp).toBeGreaterThan(0);

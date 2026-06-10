@@ -567,7 +567,7 @@ export class Game {
     this.autoBuyAcc += dtMs;
     if (this.autoBuyAcc >= 2500) {
       this.autoBuyAcc = 0;
-      if (s.settings.autoMend && s.run) {
+      if (s.settings.autoMend && s.run && this.lvl('sexton') > 0) {
         for (const m of MINIONS) {
           const st = s.minions[m.id];
           if (st && st.level > 0 && !st.alive) this.mendMinion(m.id);
@@ -1090,6 +1090,7 @@ export class Game {
       log(`⚔ Equipped: ${item.name}.`, `rarity${item.rarity}`);
       this.recalc();
     } else if (
+      this.qolUnlocked('tithe') &&
       s.autoSalvageBelow > 0 &&
       item.rarity < s.autoSalvageBelow &&
       item.rarity < s.protectRarity
@@ -1149,8 +1150,17 @@ export class Game {
     return true;
   }
 
-  /** Toggle the player lock on an equipped item. */
+  /** The QoL automations are cheap essence unlocks (playtest experiment). */
+  qolUnlocked(id: 'sexton' | 'seal' | 'tithe'): boolean {
+    return this.lvl(id) > 0;
+  }
+
+  /** Toggle the player lock on an equipped item (needs the Quartermaster's Seal). */
   toggleLock(slot: Slot): void {
+    if (!this.qolUnlocked('seal')) {
+      log('Locking requires the Quartermaster’s Seal (Reaping tab).', 'system');
+      return;
+    }
     const gear = this.state.run?.gear ?? this.state.keptGear;
     const item = gear[slot];
     if (!item) return;

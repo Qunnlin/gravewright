@@ -21,6 +21,13 @@ how-tos and `CLAUDE.md` for the contribution rules.
 - [x] Lock equipped items — 🔒 per slot; locked items survive every automatic
   decision (PR #2).
 - [x] Auto-mend procession toggle (PR #2).
+- [x] QoL-as-essence-unlocks (PR #2): auto-mend, item locks and auto-scrap
+  cost 1 ❖ each (Sexton / Quartermaster's Seal / Scrap-Tithe). ⚠ **Playtest
+  experiment** — if gating comfort behind the first reap feels bad, revert by
+  removing the `qolUnlocked` gates in game.ts/ui.ts (note also sits in
+  upgrades.ts above the three entries).
+- [x] Souls-on-death indicator moved onto the souls plaque as a small `+N`
+  (PR #2).
 
 ## Quick wins (S effort, mostly QoL)
 

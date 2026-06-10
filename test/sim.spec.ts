@@ -15,10 +15,13 @@ import { bus } from '../src/core/events';
 /** Greedy shopping pass, like an attentive player. */
 function shop(game: Game): void {
   const s = game.state;
+  // the robot optimizes for power: the 1-essence QoL comforts are skipped
+  const QOL = ['sexton', 'seal', 'tithe'];
   for (const pool of [BONE_UPGRADES, SOUL_UPGRADES, ESSENCE_UPGRADES]) {
     for (let guard = 0; guard < 50; guard++) {
       const buyable = pool
-        .filter((u) => (s.upgrades[u.id] ?? 0) < u.max && game.canBuy(u.id))
+        .filter((u) => !QOL.includes(u.id) &&
+          (s.upgrades[u.id] ?? 0) < u.max && game.canBuy(u.id))
         .sort((a, b) => game.cost(a) - game.cost(b))[0];
       if (!buyable) break;
       game.buyUpgrade(buyable.id, true);

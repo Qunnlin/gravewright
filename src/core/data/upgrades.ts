@@ -135,6 +135,32 @@ export const SOUL_UPGRADES: UpgradeDef[] = [
 ];
 
 export const ESSENCE_UPGRADES: UpgradeDef[] = [
+  // --- QoL automations as cheap essence unlocks ---
+  // PLAYTEST NOTE: gating comfort behind prestige is an experiment (2026-06-11).
+  // If it feels bad in playtesting, revert by making these free again:
+  // remove the lvl() gates in game.ts (auto-mend tick, toggleLock,
+  // acquireItem auto-scrap) and the owned-checks in ui.ts.
+  {
+    id: 'sexton', pool: 'essence', name: 'The Tireless Sexton',
+    desc: 'A small servant with a needle and no opinion. Unlocks auto-mend: fallen minions are re-raised from bones without your attention.',
+    base: 1, growth: 1, max: 1,
+    eff: (l) => l,
+    effDesc: (l) => (l > 0 ? 'Auto-mend unlocked (toggle at the Procession)' : 'Locked'),
+  },
+  {
+    id: 'seal', pool: 'essence', name: 'Quartermaster’s Seal',
+    desc: 'Wax that outranks greed. Unlocks equipment locking: sealed items are never touched by any automatic hand.',
+    base: 1, growth: 1, max: 1,
+    eff: (l) => l,
+    effDesc: (l) => (l > 0 ? 'Item locks unlocked (🔒 on gear slots)' : 'Locked'),
+  },
+  {
+    id: 'tithe', pool: 'essence', name: 'The Scrap-Tithe',
+    desc: 'The crypt takes its cut at the door. Unlocks auto-scrap rules: unequipped loot below a chosen rarity is salvaged on pickup.',
+    base: 1, growth: 1, max: 1,
+    eff: (l) => l,
+    effDesc: (l) => (l > 0 ? 'Auto-scrap unlocked (rule at the Satchel)' : 'Locked'),
+  },
   {
     id: 'eternal', pool: 'essence', name: 'Eternal Power',
     desc: 'Your hunger outlives every collapse. ×1.8 attack and HP per level.',
