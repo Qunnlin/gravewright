@@ -72,6 +72,24 @@ test/              vitest suites + browser-smoke.mjs + balance-report
 - The hero AI fights any awake monster before exploring; trial waves spawn
   awake, so autopilot fights them naturally and won't wander off.
 
+## Contribution rules (fixed — these are not suggestions)
+
+- **Never commit directly to `main`.** Every change goes on a feature branch:
+  `feat/<slug>`, `fix/<slug>`, `balance/<slug>`, `docs/<slug>`.
+- Open a PR to `main` and **assign it to @Qunnlin** (for now):
+  `gh pr create --assignee Qunnlin --title "…" --body "…"`. The PR body states
+  what changed, why, and the test evidence.
+- **Before any PR**: `npx tsc --noEmit && npx vitest run` green; run
+  `node test/browser-smoke.mjs` for UI-touching changes and
+  `npx vitest run test/balance-report.spec.ts` for economy/balance changes.
+- **Authorship is honest**: when Claude writes the code, Claude makes the
+  commit and ends the message with
+  `Co-Authored-By: Claude <model> <noreply@anthropic.com>`.
+  Human contributors author their own manual commits under their own name —
+  no Claude trailer on human-written changes.
+- Content additions (monsters, items, affixes, sets, relics, curses,
+  achievements, classes) follow the step-by-step guide in `docs/EXTENDING.md`.
+
 ## Conventions
 
 - All balance/pacing knobs go in `balance.ts` with intent comments; data tables

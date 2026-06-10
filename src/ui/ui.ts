@@ -817,6 +817,7 @@ function panelReap(): string {
       ${can ? `✠ REAP — gain ❖ ${fmt(gain)}` : depthOk ? 'Not enough souls this cycle' : `Reach depth ${depthNeed} to reap`}
     </button>
     <h3>Essence Works</h3>
+    ${buyAmountBar()}
     ${ESSENCE_UPGRADES.filter((u) => (u.minReaps ?? 0) <= s.reaps).map(upgradeCard).join('')}
     ${ESSENCE_UPGRADES.some((u) => (u.minReaps ?? 0) > s.reaps)
       ? '<div class="hint">Further works reveal themselves after more Reapings.</div>' : ''}
