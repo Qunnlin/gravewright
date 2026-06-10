@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.local
+
+# test artifacts (screenshots from the browser smoke / visual checks)
+test/screenshot*.png
+test/shot-*.png
+
+.DS_Store

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GRAVEWRIGHT — an incremental necromancy roguelike</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☠</text></svg>" />
+  <meta name="description" content="Your heroes die. That's the point. An incremental roguelike of necromancy, souls, and very poor workplace safety." />
+</head>
+<body>
+  <div id="app">
+    <header id="topbar">
+      <h1 class="title"><span class="title-skull">☠</span><span class="title-text">GRAVEWRIGHT</span></h1>
+      <div id="currencies">
+        <span class="currency cur-gold" data-tip="<b>Gold</b> — carried by the vessel and spent at shrines. Mostly lost on death (Marrow Memory converts a share to bones).">
+          <b class="c-gold">⛁</b> <span id="cur-gold">0</span><small>gold</small></span>
+        <span class="currency cur-bones" data-tip="<b>Bones</b> — persist through death. Spent in the Crypt on the vessel's body: HP, attack, crit, fortune.">
+          <b class="c-bones">∴</b> <span id="cur-bones">0</span><small>bones</small></span>
+        <span class="currency cur-souls" data-tip="<b>Souls</b> — harvested when vessels die; deeper deaths pay far more. Spent on Necromancy: speed, minions, classes.">
+          <b class="c-souls">✦</b> <span id="cur-souls">0</span><small>souls</small></span>
+        <span class="currency cur-essence" id="cur-essence-wrap" data-tip="<b>Essence</b> — the prestige currency. Earned only by Reaping; buys permanent power that survives every collapse.">
+          <b class="c-essence">❖</b> <span id="cur-essence">0</span><small>essence</small></span>
+      </div>
+      <button class="btn" id="btn-auto" data-act="auto-toggle" data-tip="Toggle autopilot (P). Movement keys seize manual control.">▶ AUTO</button>
+    </header>
+
+    <main>
+      <section id="left">
+        <div id="runheader">
+          <div class="runrow">
+            <span id="hud-name">—</span>
+            <span id="hud-class" class="muted"></span>
+            <span id="hud-depth" class="depth"></span>
+            <span id="hud-goal" class="goal muted"></span>
+          </div>
+          <div class="bars">
+            <div class="bar hp"><div id="hud-hp-fill" class="fill"></div><span id="hud-hp-text" class="bar-text"></span></div>
+            <div class="bar xp"><div id="hud-xp-fill" class="fill"></div></div>
+          </div>
+        </div>
+        <div id="canvas-frame"><canvas id="dungeon"></canvas></div>
+        <div id="log"></div>
+      </section>
+
+      <aside id="right">
+        <nav id="tabs"></nav>
+        <div id="panel"></div>
+      </aside>
+    </main>
+  </div>
+  <div id="modal-root"></div>
+  <div id="toast-root"></div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
