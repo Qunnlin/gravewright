@@ -174,6 +174,7 @@ describe('the satchel', () => {
     seedRng(12);
     const game = freshGame();
     game.state.settings.autoEquip = false;
+    game.state.upgrades['tithe'] = 1; // auto-scrap is an essence unlock
     game.state.settings.autoSalvageBelow = 2; // scrap common & fine
     game.state.settings.protectRarity = 4;
 
@@ -220,6 +221,7 @@ describe('the satchel', () => {
     seedRng(14);
     const game = freshGame();
     game.state.settings.autoEquip = false;
+    game.state.upgrades['tithe'] = 1; // auto-scrap is an essence unlock
     game.state.settings.autoSalvageBelow = 6; // everything
     game.state.settings.protectRarity = 7;    // nothing protected
 

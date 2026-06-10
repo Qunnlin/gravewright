@@ -22,6 +22,15 @@ const STEPS: Step[] = [
       vessel shapes. A new vessel is already being drawn into the circle.`,
   },
   {
+    id: 'autopilot',
+    when: (g) => g.autoUnlocked(),
+    title: 'The Autopilot Awakens',
+    body: `The crypt has learned the way (by death, or by reaching depth 10); the vessels now know it too. They
+      explore, fight, loot and die <b>on their own</b> — that is the engine of
+      this whole enterprise. Press <b>P</b> or the <b>AUTO</b> button to pause
+      and resume; any movement key seizes manual control.`,
+  },
+  {
     id: 'bones',
     when: (g) => g.state.bones >= 25,
     title: 'The Bones Pile Up',

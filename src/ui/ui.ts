@@ -193,7 +193,18 @@ function onClick(ev: MouseEvent): void {
       game.retire();
       break;
     case 'auto-toggle':
+      if (!game.autoUnlocked()) {
+        addLog('The autopilot sleeps until the crypt tastes a death (or you reach depth 10).', 'system');
+        break;
+      }
       game.state.auto = !game.state.auto;
+      queueRender();
+      break;
+    case 'lock-toggle':
+      game.toggleLock(id as 'weapon' | 'armor' | 'charm');
+      break;
+    case 'toggle-automend':
+      game.state.settings.autoMend = !game.state.settings.autoMend;
       queueRender();
       break;
     case 'reap':
@@ -355,6 +366,8 @@ export function uiFrame(): void {
   const essWrap = $('cur-essence-wrap');
   essWrap.style.display = s.essence > 0 || s.reaps > 0 ? '' : 'none';
   setCurrency('cur-essence', s.essence);
+  const pendingEss = game.reapGain();
+  $('cur-essence-pending').textContent = pendingEss > 0 ? `+${fmt(pendingEss)}` : '';
 
   const run = s.run;
   const d = game.d;
@@ -379,9 +392,19 @@ export function uiFrame(): void {
     ($('hud-xp-fill') as HTMLElement).style.width = '0%';
   }
 
+  $('cur-souls-pending').textContent =
+    run ? `+${fmt(game.deathYield())}` : '';
+
   const autoBtn = $('btn-auto');
-  autoBtn.textContent = s.auto ? '▶ AUTO' : '⏸ MANUAL';
-  autoBtn.classList.toggle('off', !s.auto);
+  if (!game.autoUnlocked()) {
+    autoBtn.textContent = '🔒 AUTO';
+    autoBtn.classList.add('off');
+    autoBtn.dataset.tip = 'The autopilot awakens after your first death (or reaching depth 10).';
+  } else {
+    autoBtn.textContent = s.auto ? '▶ AUTO' : '⏸ MANUAL';
+    autoBtn.classList.toggle('off', !s.auto);
+    autoBtn.dataset.tip = 'Toggle autopilot (P). Movement keys seize manual control.';
+  }
 
   $('badge-reap').textContent = game.canReap() ? '!' : '';
 }
@@ -551,6 +574,8 @@ function gearLine(slot: 'weapon' | 'armor' | 'charm', item: Item | null): string
     <div class="gear-slot">
       <span class="gear-kind">${slotNames[slot]}
         <button class="btn tiny" data-act="unequip" data-id="${slot}" data-tip="Unequip into the satchel">▼</button>
+        ${game.qolUnlocked('seal') ? `<button class="btn tiny ${item.locked ? 'toggle on' : ''}" data-act="lock-toggle" data-id="${slot}"
+          data-tip="${item.locked ? 'Locked: auto-equip will never replace this. Click to unlock.' : 'Lock this item so auto-equip can never replace it.'}">${item.locked ? '🔒' : '🔓'}</button>` : ''}
       </span>
       <span class="gear-name${rCls(item)}" style="${rStyle(item)}" data-tip="${itemTip(item)}">${esc(item.name)} ${kindChip(item)}</span>
       <span class="gear-stats">${describeItem(item).join(' · ')}</span>
@@ -575,6 +600,7 @@ function satchelSection(): string {
       <div class="inv-row ${usable ? '' : 'inv-unusable'}">
         <div class="inv-main">
           <span class="slot-chip">${SLOT_LABELS[item.slot]}</span>
+          ${item.locked ? '<span class="slot-chip" data-tip="Locked: protected from every automatic scrap.">🔒</span>' : ''}
           <span class="inv-name${rCls(item)}" style="${rStyle(item)}" data-tip="${itemTip(item, equipped)}">${esc(item.name)}</span>
           ${kindChip(item)}
           <span class="inv-actions">
@@ -592,8 +618,8 @@ function satchelSection(): string {
     <div class="satchel-bar">
       <button class="btn tiny toggle ${s.settings.autoEquip ? 'on' : ''}" data-act="toggle-autoequip"
         data-tip="When on, looted items the vessel can wield are equipped automatically when clearly better (+5%).">auto-equip ${s.settings.autoEquip ? 'ON' : 'OFF'}</button>
-      <button class="btn tiny ${s.settings.autoSalvageBelow > 0 ? 'toggle on' : ''}" data-act="cycle-autosalvage"
-        data-tip="Unequipped loot below this rarity is scrapped on pickup instead of cluttering the satchel. Protected rarities are always safe. Set to 'everything' (with protect: nothing) and the satchel stays empty.">auto-scrap: ${SALVAGE_MODES[s.settings.autoSalvageBelow]}</button>
+      ${game.qolUnlocked('tithe') ? `<button class="btn tiny ${s.settings.autoSalvageBelow > 0 ? 'toggle on' : ''}" data-act="cycle-autosalvage"
+        data-tip="Unequipped loot below this rarity is scrapped on pickup instead of cluttering the satchel. Protected rarities are always safe. Set to 'everything' (with protect: nothing) and the satchel stays empty.">auto-scrap: ${SALVAGE_MODES[s.settings.autoSalvageBelow]}</button>` : ''}
       <button class="btn tiny" data-act="cycle-protect"
         data-tip="Items at or above this rarity are never auto-scrapped — not by overflow, not by auto-scrap, not by salvage-all. 'Nothing' protects nothing: even legendaries burn.">protect: ${PROTECT_MODES[s.settings.protectRarity]}</button>
       ${inv.length > 0 ? `<button class="btn tiny danger" data-act="inv-salvage-all" data-tip="Scrap the whole satchel (protected rarities stay).">salvage all</button>` : ''}
@@ -635,6 +661,7 @@ function panelVessel(): string {
   if (d.healOnKill > 0) statRows.push(['Heal on kill', `${Math.round(d.healOnKill)}%`, 'Max HP restored with every kill.']);
   if (d.keepGearChance > 0) statRows.push(['Keep gear', `${Math.round(d.keepGearChance)}%`, 'Chance per equipped item to survive the vessel’s death.']);
   if (game.wrath() > 1.01) statRows.push(['Crypt wrath', `×${game.wrath().toFixed(2)}`, 'The crypt resents your hoarded souls: monsters on new floors hit harder and last longer. Reap to appease it.']);
+  if (run) statRows.push(['Death yield', `✦ ${fmt(game.deathYield())}`, 'Souls harvested if this vessel died right now: depth^1.62 plus kills, times every soul multiplier and curse.']);
 
   const gear = run?.gear ?? s.keptGear;
 
@@ -680,6 +707,11 @@ function panelVessel(): string {
     ${satchelSection()}
 
     <h3>Procession</h3>
+    ${MINIONS.some((m) => (s.minions[m.id]?.level ?? 0) > 0) && game.qolUnlocked('sexton') ? `
+    <div class="satchel-bar">
+      <button class="btn tiny toggle ${s.settings.autoMend ? 'on' : ''}" data-act="toggle-automend"
+        data-tip="Automatically spend bones to re-raise fallen minions mid-run.">auto-mend ${s.settings.autoMend ? 'ON' : 'OFF'}</button>
+    </div>` : ''}
     ${minionRows}
 
     ${s.relics.length > 0 ? `
@@ -854,10 +886,10 @@ function panelSettings(): string {
     ${toggle('Damage numbers', s.settings.particles, 'toggle-particles')}
     ${toggle('Auto-equip loot', s.settings.autoEquip, 'toggle-autoequip',
       'When on, looted items the vessel can wield are equipped automatically when clearly better (+5%).')}
-    <div class="setting-row" data-tip="Unequipped loot below this rarity is scrapped on pickup. Protected rarities are always safe.">
+    ${game.qolUnlocked('tithe') ? `<div class="setting-row" data-tip="Unequipped loot below this rarity is scrapped on pickup. Protected rarities are always safe.">
       <span>Auto-scrap loot below</span>
       <button class="btn" data-act="cycle-autosalvage">${SALVAGE_MODES[s.settings.autoSalvageBelow]}</button>
-    </div>
+    </div>` : ''}
     <div class="setting-row" data-tip="Items at or above this rarity are never auto-scrapped — not by overflow, not by auto-scrap, not by salvage-all.">
       <span>Protect rarity</span>
       <button class="btn" data-act="cycle-protect">${PROTECT_MODES[s.settings.protectRarity]}</button>
@@ -946,8 +978,8 @@ function showIntro(): void {
     <b class="c-bones">∴ bones</b>. Spend both to make the next vessel crueler.</p>
     <p>Reach <b>depth ${B.REAP_MIN_DEPTH}</b> and the <b>Reaping</b> unlocks: collapse the
     crypt for <b class="c-essence">❖ essence</b> and permanent power.</p>
-    <p class="intro-hint">The vessel acts on its own. Steer it with WASD/arrows or a click if
-    you must micromanage the doomed.</p>
+    <p class="intro-hint">Guide the vessel yourself with WASD/arrows or clicks — once the crypt
+    has tasted its first death, the <b>autopilot</b> awakens and vessels act on their own.</p>
     <button class="btn primary" data-act="modal-close">Summon the first vessel</button>
   `);
 }

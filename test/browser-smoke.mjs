@@ -29,6 +29,15 @@ await page.waitForTimeout(800);
 ok('intro modal shown on first boot', await page.locator('.modal').count() === 1);
 await page.click('[data-act="modal-close"]');
 
+// fresh boots are manual-first: nothing plays itself in the background
+ok('autopilot locked on fresh boot', await page.evaluate(() =>
+  window.GW.state.auto === false && !window.GW.autoUnlocked()));
+// simulate the first death so the rest of the smoke run can autoplay
+await page.evaluate(() => {
+  window.GW.state.totalDeaths = 1;
+  window.GW.state.auto = true;
+});
+
 // the game summons a vessel and starts logging
 await page.waitForTimeout(4000);
 const logLines = await page.locator('.log-line').count();

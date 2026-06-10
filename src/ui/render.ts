@@ -200,10 +200,18 @@ function drawFloor(): void {
         }
         const special = TILE_GLYPHS[t];
         if (special) {
-          ctx.fillStyle = vis ? special.color : dim(special.color);
-          if (vis && (t === TILE.SHRINE || t === TILE.WELL)) {
-            ctx.shadowColor = special.color;
-            ctx.shadowBlur = 8;
+          // spent shrines and wells go cold and grey — no glow, no promise
+          const spent =
+            (t === TILE.SHRINE && floor.shrine?.used) ||
+            (t === TILE.WELL && floor.well?.used);
+          if (spent) {
+            ctx.fillStyle = vis ? '#4a4658' : '#2a2734';
+          } else {
+            ctx.fillStyle = vis ? special.color : dim(special.color);
+            if (vis && (t === TILE.SHRINE || t === TILE.WELL)) {
+              ctx.shadowColor = special.color;
+              ctx.shadowBlur = 8;
+            }
           }
           ctx.fillText(special.glyph, px + CELL / 2, py + CELL / 2 + 1);
           ctx.shadowBlur = 0;

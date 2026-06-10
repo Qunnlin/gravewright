@@ -13,25 +13,25 @@ how-tos and `CLAUDE.md` for the contribution rules.
   the world freezes turn-based until the wager is answered.
 - [x] Buy-amount toggle (×1/×10/×max) in the Reaping tab (was already live in
   Crypt & Necromancy).
+- [x] Souls-on-death indicator — live `✦ N on death` in the HUD + Vessel stats
+  (PR #2).
+- [x] Manual-first onboarding — fresh games start without autopilot; the first
+  death (or depth 10) awakens it, with a tutorial whisper (PR #2).
+- [x] Visibly dim used shrines & wells (PR #2).
+- [x] Lock equipped items — 🔒 per slot; locked items survive every automatic
+  decision (PR #2).
+- [x] Auto-mend procession toggle (PR #2).
+- [x] QoL-as-essence-unlocks (PR #2): auto-mend, item locks and auto-scrap
+  cost 1 ❖ each (Sexton / Quartermaster's Seal / Scrap-Tithe). ⚠ **Playtest
+  experiment** — if gating comfort behind the first reap feels bad, revert by
+  removing the `qolUnlocked` gates in game.ts/ui.ts (note also sits in
+  upgrades.ts above the three entries).
+- [x] Souls-on-death indicator moved onto the souls plaque as a small `+N`
+  (PR #2).
+- [x] Pending reap gain shown as a small `+N` on the essence plaque (PR #2).
 
 ## Quick wins (S effort, mostly QoL)
 
-- [ ] **(P1, S) Souls-on-death indicator** — show live what the current vessel
-  would pay out if it died now. *HUD or Vessel tab: `soulsOnDeath(depth, kills)
-  × d.soulMult × curseMult` — formula already exists in balance.ts.*
-- [ ] **(P1, S) Don't start fresh sessions on autopilot** — a first-time
-  player (incognito test) had the game playing itself in the background
-  unnoticed. Unlock auto after the first death (or depth 10?) with a tutorial
-  modal introducing it. *`state.auto=false` in defaultState; gate the AUTO
-  button until `totalDeaths >= 1`; add a tutorial whisper + small modal.*
-- [ ] **(P1, S) Visibly dim used shrines** — players try to reuse them.
-  *render.ts: grey/no-glow glyph when `floor.shrine.used`.*
-- [ ] **(P1, S) Lock equipped items** — per-slot lock so auto-equip can never
-  replace them (completed-set protection already exists; this generalizes it).
-  *Item or slot flag + padlock toggle in gearLine; check in acquireItem.*
-- [ ] **(P1, S) Auto-mend procession toggle** — auto-spend bones to re-raise
-  fallen minions mid-run. *Settings + satchel-bar-style toggle; hook in tick
-  like the bone automaton.*
 - [ ] **(P2, S) Protect-vestige-only option** — a protect tier between
   'legendary+' and 'nothing' that shields only set pieces. *PROTECT_MODES
   entry; mind the sentinel ordering (7 = nothing).*
@@ -44,6 +44,18 @@ how-tos and `CLAUDE.md` for the contribution rules.
 
 ## Gameplay & balance
 
+- [ ] **(P1, L) THE BIG REBALANCE — the game gets very easy at some point.**
+  Optimally-shopped vessels out-scale the monster curves and late-game
+  difficulty collapses (the balance report already shows near-immortal
+  frontier vessels). Some of this may resolve via other items — faster depth
+  traversal/skip removes the "easy floors are boring" half, the defense
+  rework removes the mitigation checkbox, Crypt Wrath bites hoarders — but a
+  dedicated pass is needed on top. *Approach: extend balance-report with
+  difficulty metrics (vessel TTK vs monster TTK by depth, deaths per hour at
+  optimal play, income-vs-monster-curve exponent comparison), then tune
+  monster curves / income growth / wrath slope / item budgets until the
+  frontier stays lethal at every stage. Tie in the trial overhaul as the
+  intended hard content.*
 - [ ] **(P1, M) Sets balance pass** — Vestiges have predictable but few stat
   types and should be *clearly* stronger than Legendaries; right now a good
   Legendary can out-stat them. Either raise SET_BUDGET_MULT, give pieces more

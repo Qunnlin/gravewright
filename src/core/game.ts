@@ -68,14 +68,16 @@ export function defaultState(): GameState {
     inventory: [],
     run: null,
     summonCd: 0,
-    auto: true,
+    // the autopilot is earned, not given — fresh games play manually until
+    // the crypt has tasted a death (or depth 10); see autoUnlocked()
+    auto: false,
     tutorial: {},
     rates: { souls: 0, bones: 0 },
     lastSeen: Date.now(),
     settings: {
       sound: true, autoBuyBones: true, particles: true,
       autoEquip: true, autoSalvageBelow: 0, protectRarity: 4,
-      buyAmount: 1,
+      buyAmount: 1, autoMend: false,
     },
   };
 }
@@ -95,7 +97,21 @@ export class Game {
 
   constructor(state?: GameState) {
     this.state = state ?? defaultState();
+    if (!this.autoUnlocked()) this.state.auto = false;
     this.d = this.recalc();
+  }
+
+  /** The autopilot awakens after the first death (or reaching depth 10). */
+  autoUnlocked(): boolean {
+    return this.state.totalDeaths >= 1 || this.state.bestDepth >= 10;
+  }
+
+  /** Souls this vessel would pay out if it died right now (all multipliers). */
+  deathYield(): number {
+    const run = this.state.run;
+    if (!run) return 0;
+    return B.soulsOnDeath(run.depth, run.kills) *
+      this.d.soulMult * this.curseMult('soulMult');
   }
 
   /** ---------------- derived stats ---------------- */
@@ -498,6 +514,12 @@ export class Game {
     s.summonCd = this.d.summonCdMax;
     this.actAcc = 0;
 
+    // the first death awakens the autopilot — the engine starts here
+    if (s.totalDeaths === 1 && !s.auto) {
+      s.auto = true;
+      log('⚙ The autopilot awakens. Vessels now act on their own (P to pause).', 'mystic');
+    }
+
     bus.emit({
       type: 'death',
       name: run.heroName, depth: run.depth, souls, kills: run.kills,
@@ -541,10 +563,16 @@ export class Game {
       if (this.actAcc > per * 3) this.actAcc = per * 3;
     }
 
-    // bone automaton
+    // bone automaton & auto-mend
     this.autoBuyAcc += dtMs;
     if (this.autoBuyAcc >= 2500) {
       this.autoBuyAcc = 0;
+      if (s.settings.autoMend && s.run && this.lvl('sexton') > 0) {
+        for (const m of MINIONS) {
+          const st = s.minions[m.id];
+          if (st && st.level > 0 && !st.alive) this.mendMinion(m.id);
+        }
+      }
       if (s.settings.autoBuyBones && this.lvl('automaton') > 0) {
         let bought = 0;
         for (let i = 0; i < 5; i++) {
@@ -1013,7 +1041,8 @@ export class Game {
       return;
     }
     const prot = this.state.settings.protectRarity;
-    const rank = (it: Item) => (it.rarity >= prot ? 1 : 0);
+    // locked items are sacrosanct; protected rarities go only as a last resort
+    const rank = (it: Item) => (it.locked ? 2 : it.rarity >= prot ? 1 : 0);
     const candidates = [
       ...inv.map((it, i) => ({ it, i })),
       { it: item, i: -1 },
@@ -1050,6 +1079,7 @@ export class Game {
       s.autoEquip && run !== null &&
       this.canEquip(item, klass) &&
       !this.completesWornSet(cur) &&
+      !cur?.locked &&
       (!cur || this.effScore(item, klass) > this.effScore(cur, klass) * 1.05);
 
     bus.emit({ type: 'item', item, equipped: wantsEquip });
@@ -1060,6 +1090,7 @@ export class Game {
       log(`⚔ Equipped: ${item.name}.`, `rarity${item.rarity}`);
       this.recalc();
     } else if (
+      this.qolUnlocked('tithe') &&
       s.autoSalvageBelow > 0 &&
       item.rarity < s.autoSalvageBelow &&
       item.rarity < s.protectRarity
@@ -1109,10 +1140,35 @@ export class Game {
   salvageFromInventory(index: number): boolean {
     const item = this.state.inventory[index];
     if (!item) return false;
+    if (item.locked) {
+      log(`${item.name} is locked — unlock it before scrapping.`, 'system');
+      return false;
+    }
     this.state.inventory.splice(index, 1);
     this.salvageItem(item);
     bus.emit({ type: 'dirty' });
     return true;
+  }
+
+  /** The QoL automations are cheap essence unlocks (playtest experiment). */
+  qolUnlocked(id: 'sexton' | 'seal' | 'tithe'): boolean {
+    return this.lvl(id) > 0;
+  }
+
+  /** Toggle the player lock on an equipped item (needs the Quartermaster's Seal). */
+  toggleLock(slot: Slot): void {
+    if (!this.qolUnlocked('seal')) {
+      log('Locking requires the Quartermaster’s Seal (Reaping tab).', 'system');
+      return;
+    }
+    const gear = this.state.run?.gear ?? this.state.keptGear;
+    const item = gear[slot];
+    if (!item) return;
+    item.locked = !item.locked;
+    log(item.locked
+      ? `🔒 ${item.name} is locked in place.`
+      : `🔓 ${item.name} is unlocked.`, 'system');
+    bus.emit({ type: 'dirty' });
   }
 
   /** Scrap the whole satchel — except protected rarities, which stay put. */
@@ -1120,8 +1176,8 @@ export class Game {
     const inv = this.state.inventory;
     if (inv.length === 0) return;
     const prot = this.state.settings.protectRarity;
-    const kept = inv.filter((it) => it.rarity >= prot);
-    const scrapped = inv.filter((it) => it.rarity < prot);
+    const kept = inv.filter((it) => it.locked || it.rarity >= prot);
+    const scrapped = inv.filter((it) => !it.locked && it.rarity < prot);
     if (scrapped.length === 0) {
       log('Everything in the satchel is protected. Nothing scrapped.', 'system');
       return;

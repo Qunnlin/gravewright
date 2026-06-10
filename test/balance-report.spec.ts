@@ -18,10 +18,13 @@ import { CLASSES } from '../src/core/data/classes';
 
 function shop(game: Game): void {
   const s = game.state;
+  // the robot optimizes for power: the 1-essence QoL comforts are skipped
+  const QOL = ['sexton', 'seal', 'tithe'];
   for (const pool of [BONE_UPGRADES, SOUL_UPGRADES, ESSENCE_UPGRADES]) {
     for (let guard = 0; guard < 50; guard++) {
       const buyable = pool
-        .filter((u) => (s.upgrades[u.id] ?? 0) < u.max && game.canBuy(u.id))
+        .filter((u) => !QOL.includes(u.id) &&
+          (s.upgrades[u.id] ?? 0) < u.max && game.canBuy(u.id))
         .sort((a, b) => game.cost(a) - game.cost(b))[0];
       if (!buyable) break;
       game.buyUpgrade(buyable.id, true);
@@ -61,6 +64,7 @@ describe('balance report', () => {
     bus.on((e) => {
       if (e.type === 'trialOffer') game.state.auto = true;
     });
+    game.state.auto = true; // robots skip the manual-first onboarding
 
     const reports: CycleReport[] = [];
     const CYCLE_CAP_S = 4 * 3600;
@@ -136,6 +140,7 @@ describe('balance report', () => {
 
     // the crypt's teeth: stop shopping entirely and the frontier MUST kill the
     // vessel within 30 sim-minutes — without income growth, monsters win
+    game.state.auto = true; // doReap cleared the run; keep the robot marching
     const deathsBefore = game.state.totalDeaths;
     let extraS = 0;
     while (extraS < 1800 && game.state.totalDeaths === deathsBefore) {

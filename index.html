@@ -16,10 +16,10 @@
           <b class="c-gold">⛁</b> <span id="cur-gold">0</span><small>gold</small></span>
         <span class="currency cur-bones" data-tip="<b>Bones</b> — persist through death. Spent in the Crypt on the vessel's body: HP, attack, crit, fortune.">
           <b class="c-bones">∴</b> <span id="cur-bones">0</span><small>bones</small></span>
-        <span class="currency cur-souls" data-tip="<b>Souls</b> — harvested when vessels die; deeper deaths pay far more. Spent on Necromancy: speed, minions, classes.">
-          <b class="c-souls">✦</b> <span id="cur-souls">0</span><small>souls</small></span>
-        <span class="currency cur-essence" id="cur-essence-wrap" data-tip="<b>Essence</b> — the prestige currency. Earned only by Reaping; buys permanent power that survives every collapse.">
-          <b class="c-essence">❖</b> <span id="cur-essence">0</span><small>essence</small></span>
+        <span class="currency cur-souls" data-tip="<b>Souls</b> — harvested when vessels die; deeper deaths pay far more. The small +N is what the current vessel would pay if it died right now.">
+          <b class="c-souls">✦</b> <span id="cur-souls">0</span><span id="cur-souls-pending" class="pending-yield"></span><small>souls</small></span>
+        <span class="currency cur-essence" id="cur-essence-wrap" data-tip="<b>Essence</b> — the prestige currency. Earned only by Reaping; buys permanent power that survives every collapse. The small +N is what a Reaping would pay right now.">
+          <b class="c-essence">❖</b> <span id="cur-essence">0</span><span id="cur-essence-pending" class="pending-yield"></span><small>essence</small></span>
       </div>
       <button class="btn" id="btn-auto" data-act="auto-toggle" data-tip="Toggle autopilot (P). Movement keys seize manual control.">▶ AUTO</button>
     </header>
