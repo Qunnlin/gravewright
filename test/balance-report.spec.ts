@@ -57,6 +57,10 @@ describe('balance report', () => {
     seedRng(987654321);
     bus.clear();
     const game = new Game();
+    // the robot declines every Sealed Hall wager and keeps marching
+    bus.on((e) => {
+      if (e.type === 'trialOffer') game.state.auto = true;
+    });
 
     const reports: CycleReport[] = [];
     const CYCLE_CAP_S = 4 * 3600;

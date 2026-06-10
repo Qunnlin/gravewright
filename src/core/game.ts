@@ -935,8 +935,13 @@ export class Game {
       // re-offer on deliberate (manual) steps; only once for the autopilot
       if (!floor.trialOffered || !this.state.auto) {
         floor.trialOffered = true;
+        // pause the world while the wager is considered — otherwise the
+        // autopilot clears the floor behind an unread modal
+        const wasAuto = this.state.auto;
+        this.state.auto = false;
+        this.actAcc = 0;
         bus.emit({ type: 'sound', name: 'well' });
-        bus.emit({ type: 'trialOffer' });
+        bus.emit({ type: 'trialOffer', wasAuto });
       }
     }
 

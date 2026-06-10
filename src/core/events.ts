@@ -16,7 +16,7 @@ export type GameEvent =
   | { type: 'relic'; id: string }
   | { type: 'item'; item: import('./types').Item; equipped: boolean }
   | { type: 'reap'; essence: number }
-  | { type: 'trialOffer' }
+  | { type: 'trialOffer'; wasAuto: boolean }
   | { type: 'trialResult'; won: boolean; piece?: string }
   | { type: 'offline'; ms: number; souls: number; bones: number }
   | { type: 'dirty' };       // something changed; UI should refresh panels

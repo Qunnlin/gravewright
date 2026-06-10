@@ -128,6 +128,40 @@ describe('vestige set items', () => {
   });
 });
 
+describe('the trial offer pauses the world', () => {
+  it('stepping onto the shrine under autopilot drops to manual and reports prior mode', () => {
+    seedRng(36);
+    const game = freshGame();
+    game.state.run!.depth = 13;
+    game.descend();
+    const floor = game.state.run!.floor;
+    const trial = floor.trial!;
+    expect(trial).toBeTruthy();
+
+    // park the hero next to the shrine, autopilot on, and step onto it
+    floor.monsters = [];
+    game.heroPos.x = trial.x + 1;
+    game.heroPos.y = trial.y;
+    game.state.auto = true;
+
+    let offered: { wasAuto: boolean } | null = null;
+    bus.on((e) => {
+      if (e.type === 'trialOffer') offered = { wasAuto: e.wasAuto };
+    });
+    game.manualMove(-1, 0);
+
+    expect(offered).not.toBeNull();
+    expect(offered!.wasAuto).toBe(true); // UI restores this after the choice
+    expect(game.state.auto).toBe(false); // the world holds its breath
+
+    // while paused, ticking time moves nothing — the floor cannot be skipped
+    const turn = game.state.run!.turn;
+    for (let i = 0; i < 40; i++) game.tick(250);
+    expect(game.state.run!.turn).toBe(turn);
+    expect(game.state.run!.depth).toBe(14);
+  });
+});
+
 describe('set protection', () => {
   it('auto-equip never silently breaks a completed set', () => {
     seedRng(23);

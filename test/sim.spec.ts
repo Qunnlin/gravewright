@@ -39,14 +39,23 @@ function shop(game: Game): void {
   }
 }
 
-/** Advance simulated time in 250ms ticks, shopping once a second. */
+/** Advance simulated time in 250ms ticks, shopping once a second.
+ *  The trial-offer pause expects a human at the modal; the robot
+ *  declines the wager and resumes the autopilot. */
 function play(game: Game, seconds: number, until?: () => boolean): number {
+  const off = bus.on((e) => {
+    if (e.type === 'trialOffer') game.state.auto = true;
+  });
   let played = 0;
-  for (let t = 0; t < seconds * 4; t++) {
-    game.tick(250);
-    played += 0.25;
-    if (t % 4 === 0) shop(game);
-    if (until && until()) break;
+  try {
+    for (let t = 0; t < seconds * 4; t++) {
+      game.tick(250);
+      played += 0.25;
+      if (t % 4 === 0) shop(game);
+      if (until && until()) break;
+    }
+  } finally {
+    off();
   }
   return played;
 }

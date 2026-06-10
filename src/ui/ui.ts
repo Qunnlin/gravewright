@@ -23,6 +23,8 @@ import { resetTutorial } from './tutorial';
 let game: Game;
 let activeTab = 'vessel';
 let renderQueued = false;
+/** autopilot state to restore after the trial-offer pause */
+let trialWasAuto = true;
 
 const TABS: { id: string; label: string }[] = [
   { id: 'vessel', label: 'Vessel' },
@@ -85,9 +87,10 @@ function onEvent(e: GameEvent): void {
       break;
     }
     case 'trialOffer':
+      trialWasAuto = e.wasAuto;
       showModal(`
         <h2>◈ The Sealed Hall</h2>
-        <p class="intro-tag">the shrine hums with old wagers</p>
+        <p class="intro-tag">the shrine hums with old wagers — the vessel holds its breath</p>
         <p>Three waves of keepers, each crueler than the last, scaled to this depth
         and the crypt's mood.</p>
         <p><b>Victory:</b> a <span class="rainbow-text">Vestige</span> — a named
@@ -95,7 +98,7 @@ function onEvent(e: GameEvent): void {
         <p><b>Defeat or flight:</b> <b class="c-souls">two-fifths of your held souls</b>,
         and the dead vessel pays nothing.</p>
         <button class="btn primary" data-act="trial-accept">◈ Swear the Trial</button>
-        <button class="btn" data-act="modal-close">Walk away</button>
+        <button class="btn" data-act="trial-decline">Walk away</button>
       `);
       break;
     case 'trialResult':
@@ -253,6 +256,11 @@ function onClick(ev: MouseEvent): void {
     case 'trial-accept':
       closeModal();
       game.acceptTrial();
+      game.state.auto = trialWasAuto; // resume; the vessel fights the waves
+      break;
+    case 'trial-decline':
+      closeModal();
+      game.state.auto = trialWasAuto; // resume the descent, wager declined
       break;
     case 'tutorial-reset':
       resetTutorial();
