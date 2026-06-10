@@ -194,7 +194,7 @@ function onClick(ev: MouseEvent): void {
       break;
     case 'auto-toggle':
       if (!game.autoUnlocked()) {
-        addLog('The autopilot sleeps until the crypt tastes a death.', 'system');
+        addLog('The autopilot sleeps until the crypt tastes a death (or you reach depth 10).', 'system');
         break;
       }
       game.state.auto = !game.state.auto;
