@@ -13,25 +13,17 @@ how-tos and `CLAUDE.md` for the contribution rules.
   the world freezes turn-based until the wager is answered.
 - [x] Buy-amount toggle (×1/×10/×max) in the Reaping tab (was already live in
   Crypt & Necromancy).
+- [x] Souls-on-death indicator — live `✦ N on death` in the HUD + Vessel stats
+  (PR #2).
+- [x] Manual-first onboarding — fresh games start without autopilot; the first
+  death (or depth 10) awakens it, with a tutorial whisper (PR #2).
+- [x] Visibly dim used shrines & wells (PR #2).
+- [x] Lock equipped items — 🔒 per slot; locked items survive every automatic
+  decision (PR #2).
+- [x] Auto-mend procession toggle (PR #2).
 
 ## Quick wins (S effort, mostly QoL)
 
-- [ ] **(P1, S) Souls-on-death indicator** — show live what the current vessel
-  would pay out if it died now. *HUD or Vessel tab: `soulsOnDeath(depth, kills)
-  × d.soulMult × curseMult` — formula already exists in balance.ts.*
-- [ ] **(P1, S) Don't start fresh sessions on autopilot** — a first-time
-  player (incognito test) had the game playing itself in the background
-  unnoticed. Unlock auto after the first death (or depth 10?) with a tutorial
-  modal introducing it. *`state.auto=false` in defaultState; gate the AUTO
-  button until `totalDeaths >= 1`; add a tutorial whisper + small modal.*
-- [ ] **(P1, S) Visibly dim used shrines** — players try to reuse them.
-  *render.ts: grey/no-glow glyph when `floor.shrine.used`.*
-- [ ] **(P1, S) Lock equipped items** — per-slot lock so auto-equip can never
-  replace them (completed-set protection already exists; this generalizes it).
-  *Item or slot flag + padlock toggle in gearLine; check in acquireItem.*
-- [ ] **(P1, S) Auto-mend procession toggle** — auto-spend bones to re-raise
-  fallen minions mid-run. *Settings + satchel-bar-style toggle; hook in tick
-  like the bone automaton.*
 - [ ] **(P2, S) Protect-vestige-only option** — a protect tier between
   'legendary+' and 'nothing' that shields only set pieces. *PROTECT_MODES
   entry; mind the sentinel ordering (7 = nothing).*
