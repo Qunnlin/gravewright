@@ -950,6 +950,51 @@ button[data-tip], .btn[data-tip] { cursor: pointer; }
 .intro-hint { font-size: 13px; color: #908ba9; }
 .offline-gains { font-size: 17px; line-height: 1.8; font-family: var(--font-mono) !important; }
 
+/* ---------- dev room (only exists with ?dev=1) ---------- */
+
+#devroom-root {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 96;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+#devroom-toggle { border-color: var(--ember); color: var(--ember); }
+
+#devroom {
+  background: linear-gradient(180deg, #1d1410, #120c08);
+  border: 1px solid var(--ember);
+  border-radius: 7px;
+  padding: 10px 12px;
+  max-width: 340px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7), 0 0 18px rgba(255, 158, 61, 0.15);
+}
+#devroom.hidden { display: none; }
+
+.dev-section { margin-bottom: 7px; line-height: 2; }
+.dev-section b {
+  display: block;
+  color: var(--ember);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+.dev-section .btn.tiny { margin: 0 3px 3px 0; }
+#dev-depth {
+  width: 64px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  padding: 2px 6px;
+}
+
 /* ---------- scrollbars ---------- */
 
 ::-webkit-scrollbar { width: 8px; }
