@@ -366,6 +366,8 @@ export function uiFrame(): void {
   const essWrap = $('cur-essence-wrap');
   essWrap.style.display = s.essence > 0 || s.reaps > 0 ? '' : 'none';
   setCurrency('cur-essence', s.essence);
+  const pendingEss = game.reapGain();
+  $('cur-essence-pending').textContent = pendingEss > 0 ? `+${fmt(pendingEss)}` : '';
 
   const run = s.run;
   const d = game.d;

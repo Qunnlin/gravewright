@@ -28,6 +28,7 @@ how-tos and `CLAUDE.md` for the contribution rules.
   upgrades.ts above the three entries).
 - [x] Souls-on-death indicator moved onto the souls plaque as a small `+N`
   (PR #2).
+- [x] Pending reap gain shown as a small `+N` on the essence plaque (PR #2).
 
 ## Quick wins (S effort, mostly QoL)
 
@@ -43,6 +44,18 @@ how-tos and `CLAUDE.md` for the contribution rules.
 
 ## Gameplay & balance
 
+- [ ] **(P1, L) THE BIG REBALANCE — the game gets very easy at some point.**
+  Optimally-shopped vessels out-scale the monster curves and late-game
+  difficulty collapses (the balance report already shows near-immortal
+  frontier vessels). Some of this may resolve via other items — faster depth
+  traversal/skip removes the "easy floors are boring" half, the defense
+  rework removes the mitigation checkbox, Crypt Wrath bites hoarders — but a
+  dedicated pass is needed on top. *Approach: extend balance-report with
+  difficulty metrics (vessel TTK vs monster TTK by depth, deaths per hour at
+  optimal play, income-vs-monster-curve exponent comparison), then tune
+  monster curves / income growth / wrath slope / item budgets until the
+  frontier stays lethal at every stage. Tie in the trial overhaul as the
+  intended hard content.*
 - [ ] **(P1, M) Sets balance pass** — Vestiges have predictable but few stat
   types and should be *clearly* stronger than Legendaries; right now a good
   Legendary can out-stat them. Either raise SET_BUDGET_MULT, give pieces more
