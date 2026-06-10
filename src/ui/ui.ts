@@ -399,7 +399,7 @@ export function uiFrame(): void {
   if (!game.autoUnlocked()) {
     autoBtn.textContent = '🔒 AUTO';
     autoBtn.classList.add('off');
-    autoBtn.dataset.tip = 'The autopilot awakens after your first death.';
+    autoBtn.dataset.tip = 'The autopilot awakens after your first death (or reaching depth 10).';
   } else {
     autoBtn.textContent = s.auto ? '▶ AUTO' : '⏸ MANUAL';
     autoBtn.classList.toggle('off', !s.auto);
