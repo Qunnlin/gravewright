@@ -81,7 +81,7 @@ window.addEventListener('keydown', (ev) => {
     return;
   }
   if (ev.key === 'p' || ev.key === 'P') {
-    game.state.auto = !game.state.auto;
+    if (game.autoUnlocked()) game.state.auto = !game.state.auto;
     return;
   }
 

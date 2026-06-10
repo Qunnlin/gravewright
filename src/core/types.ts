@@ -28,6 +28,8 @@ export interface Item {
   kind?: WeaponKind;
   /** vestiges only: which named set this piece belongs to */
   setId?: string;
+  /** player-locked: auto-equip never replaces it, auto-scrap never eats it */
+  locked?: boolean;
 }
 
 export type MonsterSpecial =
@@ -164,10 +166,12 @@ export interface Settings {
   autoEquip: boolean;
   /** instantly scrap unequipped loot below this rarity (0 = never) */
   autoSalvageBelow: number;
-  /** items at or above this rarity are never auto-scrapped (3 epic / 4 mythic / 5 legendary / 6 nothing) */
+  /** items at or above this rarity are never auto-scrapped (3 epic / 4 mythic / 5 legendary / 7 nothing) */
   protectRarity: number;
   /** shop purchase batch: 1, 10, or 0 = max affordable */
   buyAmount: number;
+  /** automatically re-raise fallen minions with bones */
+  autoMend: boolean;
 }
 
 export interface GameState {

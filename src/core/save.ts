@@ -34,6 +34,7 @@ function fixWeaponKind(item: Item | null): void {
   if (item.setId !== undefined && (typeof item.setId !== 'string' || !setById(item.setId))) {
     delete item.setId;
   }
+  if (item.locked !== undefined) item.locked = item.locked === true;
   if (item.slot !== 'weapon') return;
   if (!item.kind || !(item.kind in WEAPON_KINDS)) item.kind = 'blade';
 }

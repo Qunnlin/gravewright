@@ -46,6 +46,7 @@ function play(game: Game, seconds: number, until?: () => boolean): number {
   const off = bus.on((e) => {
     if (e.type === 'trialOffer') game.state.auto = true;
   });
+  game.state.auto = true; // robots skip the manual-first onboarding
   let played = 0;
   try {
     for (let t = 0; t < seconds * 4; t++) {
