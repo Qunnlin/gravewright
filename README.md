@@ -2,6 +2,11 @@
 
 *an incremental necromancy roguelike — your heroes die; that's the point.*
 
+> ⚠️ **This is a vibe-coded project.** It was built during (and after hours of)
+> genua's **GeekWeek** hackathon as an experiment in what Claude Code can do —
+> and to have some fun. Read [About this project](#about-this-project) before
+> judging the code too kindly or too harshly.
+
 You are the **Gravewright**, chained beneath an endless crypt. You summon cheap,
 hopeful heroes ("vessels") and send them down. They auto-explore procedurally
 generated floors, fight, loot — and die. Every death is harvested as **souls**;
@@ -89,3 +94,53 @@ src/core/        pure simulation — no DOM, no canvas, no audio
 src/ui/          canvas renderer, DOM panels, sound — all driven by the event bus
 test/            vitest suites + a real-browser smoke test
 ```
+
+## About this project
+
+This game was built during genua's **GeekWeek** hackathon, after hours, as a
+vibe-coding experiment — to explore what Claude (via Claude Code) is capable
+of, and to have some fun along the way.
+
+Full transparency: **I have not written most of the productive code in this
+repository.** My contribution is prompts, playtesting, direction and taste;
+the code itself was written by Claude Code, session by session. That's the
+experiment.
+
+And that's exactly why this matters to me: **game developers — and software
+developers in general — are awesome.** AI tools, Claude Code very much
+included, are amazing, but they are *tools*. They should support and amplify
+human creativity, never replace it. If anything, watching an AI assemble a
+small game in a few evenings deepens the respect for the people who design,
+build, balance and polish real games over years. This project has nothing on
+real game development — and it isn't trying to.
+
+## Contributing
+
+This repo is meant to be shared with the team — humans and their Claude Codes
+alike. PRs welcome.
+
+**Humans:**
+
+```bash
+git clone git@github.com:Qunnlin/gravewright.git && cd gravewright
+npm install
+npm run dev        # play at :5173
+```
+
+1. Pick something from [`TODO.md`](TODO.md) (or bring your own idea).
+2. Branch from `main`: `feat/<slug>`, `fix/<slug>`, `balance/<slug>` or
+   `docs/<slug>`. **Never commit to `main` directly.**
+3. `npx tsc --noEmit && npx vitest run` must be green; run
+   `node test/browser-smoke.mjs` for UI changes and the balance report
+   (`npx vitest run test/balance-report.spec.ts`) for economy changes.
+4. Open a PR and assign it to **@Qunnlin** (for now).
+5. Author your own commits under your own name.
+
+**Claude Codes:** clone the repo and just start a session — Claude reads
+[`CLAUDE.md`](CLAUDE.md) (architecture, invariants, contribution rules) on its
+own. A good first prompt is "pick a P1 item from TODO.md and implement it".
+Content additions (monsters, items, sets, relics, achievements…) have a
+step-by-step guide in [`docs/EXTENDING.md`](docs/EXTENDING.md). Commits made
+by a Claude are committed by that Claude and carry a
+`Co-Authored-By: Claude <model> <noreply@anthropic.com>` trailer — keep the
+honesty of who wrote what.
