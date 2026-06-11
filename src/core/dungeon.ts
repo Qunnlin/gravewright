@@ -372,6 +372,54 @@ export function genFloor(depth: number, mods: GenMods = DEFAULT_MODS, withTrial 
   return floor;
 }
 
+/** The Sealed Hall: one huge pillared arena. No stairs, no loot, no mercy.
+ *  The onslaught itself is spawned by the Game (wrath/curse-scaled packs). */
+export function genTrialHall(depth: number, mods: GenMods = DEFAULT_MODS): Floor {
+  void mods; // the hall is bare; its monsters arrive later, already scaled
+  const tiles = new Uint8Array(FLOOR_W * FLOOR_H); // all WALL
+  for (let y = 2; y < FLOOR_H - 2; y++) {
+    for (let x = 2; x < FLOOR_W - 2; x++) {
+      tiles[idx(x, y)] = TILE.FLOOR;
+    }
+  }
+  // scattered pillars for cover and line-of-sight play; the center stays open
+  const cx = Math.floor(FLOOR_W / 2);
+  const cy = Math.floor(FLOOR_H / 2);
+  for (let i = 0; i < 18; i++) {
+    const px = rndInt(5, FLOOR_W - 6);
+    const py = rndInt(4, FLOOR_H - 5);
+    if (Math.abs(px - cx) + Math.abs(py - cy) < 5) continue;
+    tiles[idx(px, py)] = TILE.WALL;
+    if (chance(0.5)) tiles[idx(px + 1, py)] = TILE.WALL;
+  }
+  // the spent altar at the heart of the hall (inert; flavor only)
+  tiles[idx(cx, cy)] = TILE.TRIAL;
+
+  const floor: Floor = {
+    depth,
+    w: FLOOR_W,
+    h: FLOOR_H,
+    tiles,
+    seen: new Uint8Array(FLOOR_W * FLOOR_H),
+    visible: new Uint8Array(FLOOR_W * FLOOR_H),
+    monsters: [],
+    items: [],
+    entry: { x: cx, y: cy },
+    // there are no stairs in the Sealed Hall — only victory or the wager
+    stairs: { x: -1, y: -1 },
+    shrine: null,
+    well: null,
+    vault: null,
+    trial: { x: cx, y: cy, used: true },
+    floorTileCount: 0,
+    isBossFloor: false,
+  };
+  let fc = 0;
+  for (let i = 0; i < tiles.length; i++) if (tiles[i] !== TILE.WALL) fc++;
+  floor.floorTileCount = fc;
+  return floor;
+}
+
 /** ---- visibility ---- */
 
 export function isPassable(floor: Floor, x: number, y: number): boolean {

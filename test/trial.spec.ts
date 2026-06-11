@@ -5,6 +5,7 @@ import { seedRng } from '../src/core/rng';
 import { bus } from '../src/core/events';
 import { TILE, type Monster } from '../src/core/types';
 import { rollSetPiece, trialSetFor, SETS } from '../src/core/data/sets';
+import { rollItem } from '../src/core/data/items';
 
 function freshGame(): Game {
   bus.clear();
@@ -13,33 +14,43 @@ function freshGame(): Game {
   return game;
 }
 
-/** Slay the CURRENT wave only: teleport each of its monsters next to the
- *  hero with 1 hp and bump it. Stops as soon as the wave advances or ends
- *  (killing the last one auto-spawns the next wave). */
-function slayTrialWave(game: Game): void {
-  const start = game.state.run?.trialActive?.wave;
-  if (start === undefined) return;
-  for (let guard = 0; guard < 20; guard++) {
+/** Survive the Hall: pace back and forth, neutering every spawn so the
+ *  onslaught timer runs out, then slay the Avatar with a 1-hp bump. */
+function surviveTrial(game: Game): { maxAlive: number } {
+  const dirs = [[0, 1], [1, 0], [0, -1], [-1, 0]] as const;
+  const passable = (dx: number, dy: number) => {
+    const f = game.state.run!.floor;
+    return f.tiles[(game.heroPos.y + dy) * f.w + (game.heroPos.x + dx)] !== TILE.WALL;
+  };
+  // even neutered monsters chip ≥1 damage per hit — the horde is the point.
+  // The flow test wants the FLOW, so the test vessel is divine.
+  game.devInvulnerable = true;
+  let maxAlive = 0;
+  for (let guard = 0; guard < 400; guard++) {
     const run = game.state.run;
-    if (!run || run.trialActive?.wave !== start) return;
-    const floor = run.floor;
-    // the test hero is here to win, not to be fair
-    for (const m of floor.monsters) m.atk = 0.0001;
-    const target = floor.monsters.find((m) => m.trial && m.hp > 0);
-    if (!target) return;
-    for (const [dx, dy] of [[0, 1], [1, 0], [0, -1], [-1, 0]] as const) {
-      const nx = game.heroPos.x + dx;
-      const ny = game.heroPos.y + dy;
-      if (floor.tiles[ny * floor.w + nx] === TILE.WALL) continue;
-      if (floor.monsters.some((m) => m !== target && m.x === nx && m.y === ny && m.hp > 0)) continue;
-      target.x = nx;
-      target.y = ny;
-      target.hp = 1;
-      target.atk = 0.0001;
-      game.manualMove(dx, dy);
-      break;
+    const t = run?.trialActive;
+    if (!run || !t) break;
+    maxAlive = Math.max(maxAlive,
+      run.floor.monsters.filter((m) => m.trial && m.hp > 0).length);
+    for (const m of run.floor.monsters) m.atk = 0.0001;
+    if (t.phase === 'avatar') {
+      const avatar = run.floor.monsters.find((m) => m.trial && m.boss && m.hp > 0);
+      if (!avatar) break;
+      // sweep the rabble aside for a clean duel (test cheat)
+      run.floor.monsters = run.floor.monsters.filter((m) => m === avatar);
+      const dir = dirs.find(([dx, dy]) => passable(dx, dy))!;
+      avatar.x = game.heroPos.x + dir[0];
+      avatar.y = game.heroPos.y + dir[1];
+      avatar.hp = 1;
+      game.manualMove(dir[0], dir[1]);
+      continue;
     }
+    // onslaught: shuffle in place; pick a step away from any blocker
+    const dir = dirs.find(([dx, dy]) => passable(dx, dy)) ?? [0, 1];
+    game.manualMove(dir[0], dir[1]);
   }
+  game.devInvulnerable = false;
+  return { maxAlive };
 }
 
 describe('vestige set items', () => {
@@ -117,7 +128,9 @@ describe('vestige set items', () => {
       run.floor.tiles[(game.heroPos.y + dy) * run.floor.w + (game.heroPos.x + dx)] !== TILE.WALL)!;
     game.manualMove(dir[0], dir[1]);
     expect(game.state.run).not.toBeNull();
-    expect(game.state.run!.hp).toBe(1);
+    // the Oath-Knot's Last Stand power: rise at 30% max HP, blessed
+    expect(game.state.run!.hp).toBe(Math.max(1, Math.round(game.d.maxHp * 0.3)));
+    expect(game.state.run!.blessTurns).toBeGreaterThan(0);
     expect(game.state.run!.oathUsed).toBe(true);
 
     // ...but only once (step back the way we came — guaranteed passable)
@@ -125,6 +138,117 @@ describe('vestige set items', () => {
     game.state.run!.statuses = [{ kind: 'poison', turns: 1, power: 999999 }];
     game.manualMove(-dir[0], -dir[1]);
     expect(game.state.run).toBeNull();
+  });
+});
+
+describe('vestige powers', () => {
+  function vesselWith(setId: string, game: Game): void {
+    const run = game.state.run!;
+    run.gear.weapon = rollSetPiece(setId, 'weapon', 10);
+    run.gear.armor = rollSetPiece(setId, 'armor', 10);
+    run.gear.charm = rollSetPiece(setId, 'charm', 10);
+    game.recalc();
+  }
+
+  it('a vestige headline stat outclasses a legendary primary at equal depth', () => {
+    seedRng(60);
+    const vestige = rollSetPiece('vigil', 'weapon', 20)!;
+    let total = 0;
+    let n = 0;
+    for (let i = 0; i < 300; i++) {
+      const leg = rollItem(20, 5);
+      if (leg.slot === 'weapon' && leg.stats.atk) {
+        total += leg.stats.atk;
+        n++;
+      }
+    }
+    expect(n).toBeGreaterThan(30);
+    const meanLegendaryAtk = total / n;
+    // deterministic vestige headline beats the average legendary primary —
+    // on top of the unique power and the set bonuses
+    expect(vestige.stats.atk!).toBeGreaterThan(meanLegendaryAtk * 1.1);
+  });
+
+  it('recalc collects the powers of worn pieces', () => {
+    seedRng(61);
+    const game = freshGame();
+    expect(game.d.powers).toEqual([]);
+    vesselWith('genugate', game);
+    expect(game.d.powers.sort()).toEqual(['inspection', 'leastpriv', 'stateful']);
+  });
+
+  it('Deep Inspection: +50% damage against unhurt enemies only', () => {
+    seedRng(62);
+    const game = freshGame();
+    vesselWith('genugate', game);
+    const run = game.state.run!;
+    const dirs = [[0, 1], [1, 0], [0, -1], [-1, 0]] as const;
+    const dir = dirs.find(([dx, dy]) =>
+      run.floor.tiles[(game.heroPos.y + dy) * run.floor.w + (game.heroPos.x + dx)] !== TILE.WALL)!;
+    const dummy: Monster = {
+      id: 9001, key: 't', name: 'Dummy', glyph: 'd', color: '#fff',
+      x: game.heroPos.x + dir[0], y: game.heroPos.y + dir[1],
+      hp: 1e9, maxHp: 1e9, atk: 0.0001, def: 0,
+      specials: [], xp: 1, tier: 1, elite: false, boss: false, mini: false,
+      enchants: [], trial: false, awake: true, slowSkip: false, summonCd: 0, stolenGold: 0,
+    };
+    run.floor.monsters = [dummy];
+    game.manualMove(dir[0], dir[1]); // first hit: inspected (full hp)
+    const first = 1e9 - dummy.hp;
+    const hpAfterFirst = dummy.hp;
+    game.manualMove(dir[0], dir[1]); // second hit: already hurt
+    const second = hpAfterFirst - dummy.hp;
+    // averages aside, the inspected hit must clearly exceed the follow-up band
+    expect(first).toBeGreaterThan(second * 1.1);
+  });
+
+  it('Stateful: a clean 5-turn session drops the next hit', () => {
+    seedRng(63);
+    const game = freshGame();
+    vesselWith('genugate', game);
+    const run = game.state.run!;
+    run.floor.monsters = [];
+    const dirs = [[0, 1], [1, 0], [0, -1], [-1, 0]] as const;
+    const dir = dirs.find(([dx, dy]) =>
+      run.floor.tiles[(game.heroPos.y + dy) * run.floor.w + (game.heroPos.x + dx)] !== TILE.WALL)!;
+    // walk 6 clean turns to establish the session
+    for (let i = 0; i < 6; i++) game.manualMove((i % 2 ? -1 : 1) * dir[0], (i % 2 ? -1 : 1) * dir[1]);
+
+    const hpBefore = run.hp;
+    const bully: Monster = {
+      id: 9002, key: 't', name: 'Bully', glyph: 'b', color: '#fff',
+      x: game.heroPos.x + dir[0], y: game.heroPos.y + dir[1],
+      hp: 1e9, maxHp: 1e9, atk: 50, def: 0,
+      specials: [], xp: 1, tier: 1, elite: false, boss: false, mini: false,
+      enchants: [], trial: false, awake: true, slowSkip: false, summonCd: 0, stolenGold: 0,
+    };
+    run.floor.monsters = [bully];
+    // AIRGAP could also eat the hit; disable randomness influence by zeroing it
+    game.d.negateChance = 0;
+    game.d.dodge = 0;
+    game.manualMove(dir[0], dir[1]); // bump; bully answers — STATEFUL drops it
+    expect(game.state.run!.hp).toBe(hpBefore);
+  });
+
+  it('True Names: every kill pays bonus souls', () => {
+    seedRng(64);
+    const game = freshGame();
+    vesselWith('regalia', game);
+    const run = game.state.run!;
+    const dirs = [[0, 1], [1, 0], [0, -1], [-1, 0]] as const;
+    const dir = dirs.find(([dx, dy]) =>
+      run.floor.tiles[(game.heroPos.y + dy) * run.floor.w + (game.heroPos.x + dx)] !== TILE.WALL)!;
+    const prey: Monster = {
+      id: 9003, key: 't', name: 'Prey', glyph: 'p', color: '#fff',
+      x: game.heroPos.x + dir[0], y: game.heroPos.y + dir[1],
+      hp: 1, maxHp: 1, atk: 0.0001, def: 0,
+      specials: [], xp: 1, tier: 0, elite: false, boss: false, mini: false,
+      enchants: [], trial: false, awake: true, slowSkip: false, summonCd: 0, stolenGold: 0,
+    };
+    run.floor.monsters = [prey];
+    const before = game.state.souls;
+    game.manualMove(dir[0], dir[1]);
+    expect(game.state.souls).toBeGreaterThan(before); // a plain kill paid souls
   });
 });
 
@@ -205,19 +329,27 @@ describe('the trial of the sealed hall', () => {
 
     const soulsBefore = game.state.souls;
     game.acceptTrial();
-    expect(game.state.run!.trialActive).toEqual({ wave: 1, totalWaves: 3 });
-    expect(game.state.run!.floor.monsters.filter((m) => m.trial && m.hp > 0).length).toBeGreaterThan(0);
 
-    slayTrialWave(game); // wave 1 → wave 2 spawns
-    expect(game.state.run!.trialActive!.wave).toBe(2);
-    slayTrialWave(game); // wave 2 → wave 3
-    expect(game.state.run!.trialActive!.wave).toBe(3);
-    slayTrialWave(game); // wave 3 → victory
+    // transported: a vast hall, no stairs, the onslaught pending
+    const hall = game.state.run!.floor;
+    expect(game.state.run!.trialActive).toMatchObject({
+      turnsSurvived: 0, phase: 'onslaught', returnDepth: 14,
+    });
+    expect(hall.stairs).toEqual({ x: -1, y: -1 });
+    expect(hall.trial?.used).toBe(true);
+    expect(hall.monsters).toHaveLength(0); // the packs come with the turns
+
+    const { maxAlive } = surviveTrial(game); // outlast it, fell the Avatar
 
     expect(game.state.run!.trialActive).toBeNull();
     expect(game.state.trialsWon).toBe(1);
     expect(game.state.souls).toBeGreaterThan(soulsBefore);
     expect(game.state.achievements['trial1']).toBe(true);
+    // the onslaught actually amassed a horde
+    expect(maxAlive).toBeGreaterThanOrEqual(8);
+    // returned to the depth the Hall took them from
+    expect(game.state.run!.depth).toBe(14);
+    expect(game.state.run!.floor.stairs.x).toBeGreaterThanOrEqual(0);
 
     // a vestige was awarded somewhere
     const gear = game.state.run!.gear;
@@ -238,16 +370,18 @@ describe('the trial of the sealed hall', () => {
 
     game.state.souls = 1000;
     const floor = game.state.run!.floor;
-    // an executioner waits adjacent
+    // an executioner materializes adjacent (the hall starts empty)
     const dirs = [[0, 1], [1, 0], [0, -1], [-1, 0]] as const;
     const dir = dirs.find(([dx, dy]) =>
       floor.tiles[(game.heroPos.y + dy) * floor.w + (game.heroPos.x + dx)] !== TILE.WALL)!;
-    const killer = floor.monsters.find((m) => m.trial)!;
-    killer.x = game.heroPos.x + dir[0];
-    killer.y = game.heroPos.y + dir[1];
-    killer.atk = 1e9;
-    killer.hp = 1e9;
-    killer.maxHp = 1e9;
+    const killer: Monster = {
+      id: 9999, key: 'test', name: 'Hall Executioner', glyph: 'X', color: '#fff',
+      x: game.heroPos.x + dir[0], y: game.heroPos.y + dir[1],
+      hp: 1e9, maxHp: 1e9, atk: 1e9, def: 0,
+      specials: [], xp: 1, tier: 1, elite: false, boss: false, mini: false,
+      enchants: [], trial: true, awake: true, slowSkip: false, summonCd: 0, stolenGold: 0,
+    };
+    floor.monsters.push(killer);
     game.state.run!.hp = 1;
     game.manualMove(dir[0], dir[1]); // bump; the killer answers
 
@@ -257,7 +391,7 @@ describe('the trial of the sealed hall', () => {
     expect(game.state.souls).toBeCloseTo(600, 5);
   });
 
-  it('fleeing down the stairs forfeits the same wager', () => {
+  it('there is no walking out: the hall has no stairs, manual descend is inert', () => {
     seedRng(33);
     const game = freshGame();
     game.state.auto = false;
@@ -266,12 +400,17 @@ describe('the trial of the sealed hall', () => {
     game.acceptTrial();
     game.state.souls = 1000;
 
-    game.descend(); // flight
+    game.manualDescend(); // nothing to stand on — no stairs exist
+    expect(game.state.run!.trialActive).not.toBeNull();
+    expect(game.state.trialsFailed).toBe(0);
+    expect(game.state.souls).toBe(1000);
+
+    // the API-level flight path still settles the wager (safety net)
+    game.descend();
     expect(game.state.run).not.toBeNull();
     expect(game.state.run!.trialActive).toBeNull();
     expect(game.state.trialsFailed).toBe(1);
     expect(game.state.souls).toBeCloseTo(600, 5);
-    // the fled hall's keepers do not follow
     expect(game.state.run!.floor.monsters.some((m) => m.trial)).toBe(false);
   });
 
@@ -319,7 +458,7 @@ describe('the trial of the sealed hall', () => {
     game.state.run!.depth = 13;
     game.descend();
     game.acceptTrial();
-    for (let i = 0; i < 3; i++) slayTrialWave(game);
+    surviveTrial(game);
 
     const all = [...Object.values(game.state.run!.gear), ...game.state.inventory];
     const vestige = all.find((i) => i?.rarity === 6);

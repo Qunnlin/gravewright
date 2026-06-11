@@ -37,6 +37,10 @@ how-tos and `CLAUDE.md` for the contribution rules.
 - [x] Depth-skip (PR #4): **Ravenous Descent** essence upgrade — floors you
   overwhelm 2.5× collapse unentered (vaults included), tributing scraps;
   bosses and Sealed Halls always hold.
+- [x] Trial overhaul + sets balance pass (PR #7): the Sealed Hall is now a
+  real arena — 60-turn survival onslaught (~40+ enemies) ending in the Avatar,
+  no stairs, doubled rewards. Vestiges: budget 5× base (above the mean
+  Legendary primary) and every piece carries a named unique power.
 - [x] Big-rebalance part 1 (PR #4): late-depth ramp (HP ×1.08^(d−12),
   ATK ×1.05^(d−12)) + difficulty probes & wall-expedition instrumentation in
   the balance report. Measured: cycle-1 deaths 2→6, frontier monster threat
@@ -69,16 +73,6 @@ how-tos and `CLAUDE.md` for the contribution rules.
   monster curves / income growth / wrath slope / item budgets until the
   frontier stays lethal at every stage. Tie in the trial overhaul as the
   intended hard content.*
-- [ ] **(P1, M) Sets balance pass** — Vestiges have predictable but few stat
-  types and should be *clearly* stronger than Legendaries; right now a good
-  Legendary can out-stat them. Either raise SET_BUDGET_MULT, give pieces more
-  stat lines, or add enchant-like unique powers per piece (preferred: powers —
-  predictable stats are the identity, raw numbers aren't).
-- [ ] **(P1, M) Trial overhaul: bigger, longer, way harder** — the Sealed Hall
-  should be a special stage in the dungeon's theme: one huge room, survive a
-  timed onslaught of many enemies (not 3 small waves). Rewards scale with the
-  new difficulty. *Dedicated genFloor mode (one giant hall), wave-spawner on a
-  turn timer, victory = survive N turns or clear all; keep the 40% forfeit.*
 - [ ] **(P2, M) More essence sinks** — e.g. *very slightly* increased trial
   and unique-drop chances, very expensive, carefully balanced. *New essence
   upgrades with tiny eff values; cap levels hard.*

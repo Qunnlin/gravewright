@@ -13,10 +13,10 @@ import * as B from './balance';
 import { bus, log } from './events';
 import { chance, pick, rndf, rndInt } from './rng';
 import {
-  DEFAULT_MODS, bfsMap, computeFov, genFloor, isPassable, losClear,
-  nearestWhere, spawnLesser, spawnMonster, type GenMods,
+  DEFAULT_MODS, bfsMap, computeFov, genFloor, genTrialHall, isPassable,
+  losClear, nearestWhere, spawnLesser, spawnMonster, type GenMods,
 } from './dungeon';
-import { rollSetPiece, trialSetFor } from './data/sets';
+import { rollSetPiece, setById, trialSetFor } from './data/sets';
 import { CLASSES, classById } from './data/classes';
 import {
   ALL_UPGRADES, BONE_UPGRADES, MINIONS, MINION_LEVEL_STAT_MULT,
@@ -168,6 +168,15 @@ export class Game {
     const vigil2 = pieces('vigil') >= 2;
     const vigil3 = pieces('vigil') >= 3;
 
+    // every worn vestige piece carries a unique power
+    const powers: string[] = [];
+    for (const slot of ['weapon', 'armor', 'charm'] as const) {
+      const it = gear[slot];
+      if (!it?.setId) continue;
+      const piece = setById(it.setId)?.pieces.find((pp) => pp.slot === slot);
+      if (piece) powers.push(piece.powerId);
+    }
+
     const d: Derived = {
       maxHp: Math.max(1, Math.round(
         (B.HERO_BASE_HP) *
@@ -231,6 +240,7 @@ export class Game {
       dotImmune: airgap,
       lowHpAtk: vigil3 ? 0.6 : 0,
       oathstone: vigil3,
+      powers,
     };
 
     // hp delta on max increase; clamp minion hp
@@ -351,6 +361,7 @@ export class Game {
       trialActive: null,
       oathUsed: false,
       shrinesThisRun: 0,
+      lastHitTurn: 0,
     };
     s.keptGear = { weapon: null, armor: null, charm: null };
     s.run = run;
@@ -665,7 +676,10 @@ export class Game {
 
     // regen
     const klass = classById(run.klass);
-    const regen = this.d.regen + (klass.regen ? this.d.maxHp * klass.regen / 100 : 0);
+    let regen = this.d.regen + (klass.regen ? this.d.maxHp * klass.regen / 100 : 0);
+    if (this.d.powers.includes('unbroken') && run.hp < this.d.maxHp / 2) {
+      regen += this.d.maxHp * 0.015; // Bastion of the Ninth Vault
+    }
     if (regen > 0 && run.hp < this.d.maxHp) {
       run.hp = Math.min(this.d.maxHp, run.hp + regen);
     }
@@ -719,7 +733,10 @@ export class Game {
 
     computeFov(this.state.run.floor, this.heroPos.x, this.heroPos.y, this.d.vision);
     this.monstersAct();
-    if (this.state.run) this.checkLevelUp();
+    if (this.state.run) {
+      this.trialTick();
+      this.checkLevelUp();
+    }
   }
 
   private tickStatuses(): boolean {
@@ -745,13 +762,20 @@ export class Game {
     if (!run || run.hp > 0) return false;
     if (this.d.oathstone && !run.oathUsed) {
       run.oathUsed = true;
-      run.hp = 1;
+      // the Oath-Knot turns refusal into a counter-charge
+      if (this.d.powers.includes('laststand')) {
+        run.hp = Math.max(1, Math.round(this.d.maxHp * 0.3));
+        run.blessTurns = Math.max(run.blessTurns, 25);
+        log('☩ LAST STAND: the Oath refuses the blow — the vessel rises, blessed.', 'shrine');
+      } else {
+        run.hp = 1;
+        log('☩ The Last Vigil holds the door: the killing blow is refused.', 'shrine');
+      }
       bus.emit({
         type: 'float', x: this.heroPos.x, y: this.heroPos.y,
         text: 'THE OATH HOLDS', color: '#ffee88',
       });
       bus.emit({ type: 'sound', name: 'shrine' });
-      log('☩ The Last Vigil holds the door: the killing blow is refused.', 'shrine');
       return false;
     }
     this.die();
@@ -983,7 +1007,8 @@ export class Game {
 
     // shrine
     if (floor.tiles[i] === TILE.SHRINE && floor.shrine && !floor.shrine.used) {
-      const cost = this.d.shrinesFree ? 0 : B.shrineCost(run.depth);
+      const cost = this.d.shrinesFree ? 0 : Math.ceil(
+        B.shrineCost(run.depth) * (this.d.powers.includes('leastpriv') ? 0.5 : 1));
       if (run.hp < this.d.maxHp && s.gold >= cost) {
         s.gold -= cost;
         run.hp = this.d.maxHp;
@@ -1259,6 +1284,11 @@ export class Game {
       raw *= 1 + 1.5 * missing;
     }
     if (d.lowHpAtk > 0 && run.hp / d.maxHp < 0.5) raw *= 1 + d.lowHpAtk;
+    // genuScreen: first contact is fully inspected
+    if (d.powers.includes('inspection') && m.hp >= m.maxHp) raw *= 1.5;
+    // Vigilkeeper's Edge: hold the line against the named horrors
+    if (d.powers.includes('holdline') &&
+        (m.elite || m.boss || m.mini || m.enchants.length > 0)) raw *= 1.4;
     const isCrit = chance(d.crit / 100);
     if (isCrit) raw *= d.critDmg;
 
@@ -1286,6 +1316,8 @@ export class Game {
       const pierce = def.tags.includes('piercing');
       const mdmg = Math.max(1, matk * rndf(0.85, 1.15) * (pierce ? 1 : 1 - B.mitigation(m.def)));
       m.hp -= mdmg;
+      // Sceptre of the First Grave: the choir echoes every strike
+      if (this.d.powers.includes('conduction') && m.hp > 0) m.hp -= mdmg * 0.5;
     }
 
     if (m.hp <= 0) this.killMonster(m);
@@ -1328,6 +1360,11 @@ export class Game {
 
     if (this.d.healOnKill > 0) {
       run.hp = Math.min(this.d.maxHp, run.hp + this.d.maxHp * this.d.healOnKill / 100);
+    }
+
+    // Phylactery of True Names: every kill surrenders its name
+    if (this.d.powers.includes('truenames')) {
+      this.gainSouls(1 + run.depth * 0.25);
     }
 
     if (m.boss) {
@@ -1386,17 +1423,9 @@ export class Game {
       if (chance(0.06)) this.acquireItem(rollItem(run.depth, 0, run.klass));
     }
 
-    // trial wave bookkeeping (the hero must still be standing)
-    if (m.trial && this.state.run?.trialActive) {
-      const remaining = this.state.run.floor.monsters.some(
-        (mm) => mm.trial && mm.hp > 0);
-      if (!remaining) {
-        if (this.state.run.trialActive.wave >= this.state.run.trialActive.totalWaves) {
-          this.trialVictory();
-        } else {
-          this.spawnTrialWave();
-        }
-      }
+    // felling the Avatar ends the trial (the hero must still be standing)
+    if (m.trial && m.boss && this.state.run?.trialActive?.phase === 'avatar') {
+      this.trialVictory();
     }
 
     this.checkAchievements();
@@ -1590,6 +1619,16 @@ export class Game {
       return;
     }
 
+    // genuWall: an established session drops the first unexpected packet
+    if (d.powers.includes('stateful') && run.turn - run.lastHitTurn >= 5) {
+      run.lastHitTurn = run.turn;
+      bus.emit({
+        type: 'float', x: this.heroPos.x, y: this.heroPos.y,
+        text: 'STATEFUL', color: '#7fffd4',
+      });
+      return;
+    }
+
     let raw = m.atk * rndf(1 - B.DMG_VARIANCE, 1 + B.DMG_VARIANCE);
     if (m.specials.includes('deadly') && chance(0.2)) raw *= 2;
 
@@ -1616,7 +1655,8 @@ export class Game {
         }
       }
       const st = s.minions[chosen.id];
-      st.hp -= dmg;
+      // Shroud of the Hollow Choir: the choir endures
+      st.hp -= this.d.powers.includes('choir') ? dmg * 0.5 : dmg;
       if (st.hp <= 0) {
         st.alive = false;
         st.hp = 0;
@@ -1629,6 +1669,7 @@ export class Game {
     }
 
     run.hp -= dmg;
+    run.lastHitTurn = run.turn;
     bus.emit({
       type: 'float', x: this.heroPos.x, y: this.heroPos.y,
       text: `-${fmt(Math.round(dmg))}`, color: '#ff5555',
@@ -1645,7 +1686,8 @@ export class Game {
     if (m.specials.includes('burn')) {
       this.addStatus('burn', 3, Math.max(1, raw * 0.35));
     }
-    if (m.specials.includes('thief') && s.gold > 0) {
+    if (m.specials.includes('thief') && s.gold > 0 &&
+        !d.powers.includes('leastpriv')) {
       const steal = Math.min(s.gold, Math.ceil(B.monsterGold(run.depth) * 3));
       s.gold -= steal;
       m.stolenGold += steal;
@@ -1697,7 +1739,10 @@ export class Game {
     if (this.state.run.blessTurns > 0) this.state.run.blessTurns--;
     computeFov(this.state.run.floor, this.heroPos.x, this.heroPos.y, this.d.vision);
     this.monstersAct();
-    if (this.state.run) this.checkLevelUp();
+    if (this.state.run) {
+      this.trialTick();
+      this.checkLevelUp();
+    }
   }
 
   /** Manual descend (when standing on stairs). */
@@ -1724,63 +1769,98 @@ export class Game {
     const floor = run?.floor;
     if (!run || !floor?.trial || floor.trial.used || run.trialActive) return;
     floor.trial.used = true;
-    run.trialActive = { wave: 0, totalWaves: 3 };
+
+    // the wager transports the vessel to the Sealed Hall itself
+    run.trialActive = {
+      turnsSurvived: 0,
+      totalTurns: B.TRIAL_TURNS,
+      returnDepth: run.depth,
+      phase: 'onslaught',
+    };
+    run.floor = genTrialHall(run.depth, this.genMods(run.curseIds));
+    Object.assign(this.heroPos, run.floor.entry);
+    this.trail = [];
+    run.manualTarget = null;
+    run.oathUsed = false;
+    computeFov(run.floor, this.heroPos.x, this.heroPos.y, this.d.vision);
+
     bus.emit({ type: 'sound', name: 'boss' });
     bus.emit({ type: 'shake', power: 6 });
-    log('◈ The wager is sworn. The Sealed Hall wakes.', 'mystic');
-    this.spawnTrialWave();
+    bus.emit({ type: 'flash', color: '#9d7bff' });
+    log('◈ The wager is sworn. The floor opens; the Sealed Hall swallows you whole.', 'mystic');
+    log(`◈ Survive ${B.TRIAL_TURNS} turns of onslaught, then fell the Avatar. There are no stairs.`, 'boss');
     bus.emit({ type: 'dirty' });
   }
 
-  private spawnTrialWave(): void {
+  /** One hero turn elapses inside the Hall: count, spawn, escalate. */
+  private trialTick(): void {
     const run = this.state.run;
-    const trial = run?.floor.trial;
-    if (!run?.trialActive || !trial) return;
-    const t = run.trialActive;
-    t.wave++;
-    const floor = run.floor;
-    const mods = this.genMods(run.curseIds);
+    const t = run?.trialActive;
+    if (!run || !t || t.phase !== 'onslaught') return;
+    t.turnsSurvived++;
 
-    // open tiles ringing the shrine
-    const spots: { x: number; y: number }[] = [];
-    for (let dy = -4; dy <= 4 && spots.length < 6; dy++) {
-      for (let dx = -4; dx <= 4 && spots.length < 6; dx++) {
-        const x = trial.x + dx;
-        const y = trial.y + dy;
-        if (Math.abs(dx) + Math.abs(dy) < 2) continue;
-        if (!isPassable(floor, x, y)) continue;
-        if (x === this.heroPos.x && y === this.heroPos.y) continue;
-        if (floor.monsters.some((m) => m.x === x && m.y === y)) continue;
-        spots.push({ x, y });
-      }
-    }
-    if (spots.length === 0) spots.push({ ...floor.entry });
-
-    const wave: Monster[] = [];
-    if (t.wave === 1) {
-      wave.push(spawnMonster(run.depth, spots[0].x, spots[0].y, mods, { elite: true }));
-      const s2 = spots[1] ?? spots[0];
-      wave.push(spawnMonster(run.depth, s2.x, s2.y, mods, { elite: true }));
-    } else if (t.wave === 2) {
-      wave.push(spawnMonster(run.depth, spots[0].x, spots[0].y, mods, { mini: true }));
-    } else {
-      const avatar = spawnMonster(run.depth, spots[0].x, spots[0].y, mods, { boss: true });
+    if (t.turnsSurvived >= t.totalTurns) {
+      t.phase = 'avatar';
+      const spot = this.trialSpawnSpot();
+      const avatar = spawnMonster(
+        run.depth + 4, spot.x, spot.y, this.genMods(run.curseIds), { boss: true });
       avatar.name = 'Avatar of the Sealed Hall';
       avatar.glyph = '◈';
-      wave.push(avatar);
+      avatar.trial = true;
+      avatar.awake = true;
+      run.floor.monsters.push(avatar);
+      bus.emit({ type: 'sound', name: 'boss' });
+      bus.emit({ type: 'shake', power: 8 });
+      log('◈ The onslaught stills. The AVATAR OF THE SEALED HALL descends.', 'boss');
+      return;
     }
-    for (const m of wave) {
+
+    if (t.turnsSurvived % B.TRIAL_SPAWN_EVERY === 0) this.spawnTrialPack();
+  }
+
+  /** A random open hall tile, kept off the vessel's doorstep. */
+  private trialSpawnSpot(): { x: number; y: number } {
+    const floor = this.state.run!.floor;
+    for (let attempt = 0; attempt < 60; attempt++) {
+      const x = rndInt(2, floor.w - 3);
+      const y = rndInt(2, floor.h - 3);
+      if (!isPassable(floor, x, y)) continue;
+      if (Math.abs(x - this.heroPos.x) + Math.abs(y - this.heroPos.y) < 7) continue;
+      if (floor.monsters.some((m) => m.x === x && m.y === y && m.hp > 0)) continue;
+      return { x, y };
+    }
+    return { ...floor.entry };
+  }
+
+  /** The onslaught: packs grow larger, harder and deeper as the trial wears on. */
+  private spawnTrialPack(): void {
+    const run = this.state.run;
+    const t = run?.trialActive;
+    if (!run || !t) return;
+    const floor = run.floor;
+    const alive = floor.monsters.filter((m) => m.trial && m.hp > 0).length;
+    if (alive >= B.TRIAL_MAX_ALIVE) return;
+
+    const progress = t.turnsSurvived / t.totalTurns;
+    const effDepth = run.depth + Math.floor(progress * 6);
+    const count = 2 + Math.floor(progress * 3);
+    const mods = this.genMods(run.curseIds);
+
+    for (let i = 0; i < count; i++) {
+      const spot = this.trialSpawnSpot();
+      const m = spawnMonster(effDepth, spot.x, spot.y, mods,
+        { elite: chance(0.1 + progress * 0.3) });
       m.trial = true;
       m.awake = true;
       floor.monsters.push(m);
     }
-    bus.emit({ type: 'sound', name: 'boss' });
-    log(`◈ Wave ${t.wave} of ${t.totalWaves}: the Hall sends its keepers.`, 'boss');
+    bus.emit({ type: 'sound', name: 'zap' });
   }
 
   private trialVictory(): void {
     const s = this.state;
     const run = s.run!;
+    const returnDepth = run.trialActive?.returnDepth ?? run.depth;
     run.trialActive = null;
     s.trialsWon++;
 
@@ -1801,25 +1881,30 @@ export class Game {
     const missing = (['weapon', 'armor', 'charm'] as const)
       .find((slot) => !owned.has(`${setId}:${slot}`));
 
-    const v = this.gainSouls(B.wellSouls(run.depth) * 4);
+    const v = this.gainSouls(B.wellSouls(returnDepth) * 8);
     bus.emit({ type: 'trialResult', won: true, piece: missing });
     bus.emit({ type: 'sound', name: 'reap' });
     bus.emit({ type: 'shake', power: 8 });
 
     if (missing) {
-      const piece = rollSetPiece(setId, missing, run.depth);
+      const piece = rollSetPiece(setId, missing, returnDepth);
       if (piece) {
         log(`◈ THE HALL YIELDS: ${piece.name}. +${fmt(v)} souls.`, 'rarity6');
         this.acquireItem(piece);
       }
     } else {
-      const jackpot = this.gainSouls(B.wellSouls(run.depth) * 8);
+      const jackpot = this.gainSouls(B.wellSouls(returnDepth) * 16);
       log(`◈ The set is complete already — the Hall pays tribute instead: +${fmt(v + jackpot)} souls.`, 'rarity6');
     }
     // the gate hint, for those who keep winning the soft way
     if (!iron && chance(0.5)) {
       log('A voice like a closing door: “Only a hardened crypt yields the Gate.”', 'mystic');
     }
+
+    // the Hall releases its victor where it took them
+    run.depth = returnDepth - 1;
+    this.descendOnce();
+    log('◈ The Hall releases you. The crypt resumes as if nothing happened.', 'mystic');
     this.checkAchievements();
     bus.emit({ type: 'dirty' });
   }

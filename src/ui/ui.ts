@@ -91,11 +91,13 @@ function onEvent(e: GameEvent): void {
       showModal(`
         <h2>◈ The Sealed Hall</h2>
         <p class="intro-tag">the shrine hums with old wagers — the vessel holds its breath</p>
-        <p>Three waves of keepers, each crueler than the last, scaled to this depth
-        and the crypt's mood.</p>
+        <p>Swearing transports the vessel into the Hall itself: one vast arena,
+        <b>${fmt(B.TRIAL_TURNS)} turns of escalating onslaught</b>, then the
+        <b>Avatar of the Sealed Hall</b>. There are <b>no stairs</b>. No retreat —
+        only victory, death, or reclamation.</p>
         <p><b>Victory:</b> a <span class="rainbow-text">Vestige</span> — a named
-        set-piece fitted to this vessel — and a draught of souls.</p>
-        <p><b>Defeat or flight:</b> <b class="c-souls">two-fifths of your held souls</b>,
+        set-piece with a unique power, fitted to this vessel — and a deep draught of souls.</p>
+        <p><b>Defeat:</b> <b class="c-souls">two-fifths of your held souls</b>,
         and the dead vessel pays nothing.</p>
         <button class="btn primary" data-act="trial-accept">◈ Swear the Trial</button>
         <button class="btn" data-act="trial-decline">Walk away</button>
@@ -383,7 +385,12 @@ export function uiFrame(): void {
     $('hud-name').textContent = run.heroName;
     $('hud-class').textContent = `${classById(run.klass).name} · Lv ${run.level}`;
     $('hud-depth').textContent = `Depth ${run.depth}`;
-    $('hud-goal').textContent = s.auto ? game.goal : 'Manual control';
+    const trial = run.trialActive;
+    $('hud-goal').textContent = trial
+      ? trial.phase === 'avatar'
+        ? '◈ FELL THE AVATAR'
+        : `◈ survive ${trial.turnsSurvived}/${trial.totalTurns}`
+      : s.auto ? game.goal : 'Manual control';
     $('hud-hp-text').textContent = `${fmt(Math.max(0, Math.ceil(run.hp)))} / ${fmt(d.maxHp)}`;
     ($('hud-hp-fill') as HTMLElement).style.width =
       `${Math.max(0, Math.min(100, (run.hp / d.maxHp) * 100))}%`;
@@ -537,6 +544,10 @@ function itemTip(item: Item, compareWith?: Item | null): string {
       const worn = (['weapon', 'armor', 'charm'] as const)
         .filter((s) => gear[s]?.setId === item.setId).length;
       lines.push(`<span class='rainbow-text tip-set'>${esc(set.name)}</span> <span class='tip-sub'>· ${worn}/3 worn</span>`);
+      const piece = set.pieces.find((pp) => pp.slot === item.slot);
+      if (piece) {
+        lines.push(`<span class='tip-fav'>✦ ${esc(piece.powerName)}</span> <span class='tip-kind'>${esc(piece.powerDesc)}</span>`);
+      }
       lines.push(`<span class='tip-sub'>${esc(set.flavor)}</span>`);
       lines.push(`<span class='${worn >= 2 ? 'tip-diff-up' : 'tip-sub'}'>[2] ${esc(set.bonus2)}</span>`);
       lines.push(`<span class='${worn >= 3 ? 'tip-diff-up' : 'tip-sub'}'>[3] ${esc(set.bonus3)}</span>`);
