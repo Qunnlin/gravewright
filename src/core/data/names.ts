@@ -14,6 +14,7 @@ const EPITHETS = [
   'the Hopeful', 'Last-of-Kin', 'the Foolhardy', 'of No Estate',
   'the Contractual', 'the Unmourned', 'the Eager', 'Ninth-Born',
   'the Promising', 'the Brief', 'of the Fine Print', 'the Optimist',
+  'of the GeekWeek',
 ];
 
 export function vesselName(): string {

@@ -151,6 +151,9 @@ export interface RunState {
     /** depth to return the victor to */
     returnDepth: number;
     phase: 'onslaught' | 'avatar';
+    /** wrath/curse multipliers frozen at the moment the wager was sworn —
+     *  souls earned mid-trial must not escalate the onslaught itself */
+    mods: { monsterHpMult: number; monsterAtkMult: number; monsterCountMult: number };
   } | null;
   /** Last Vigil 3-piece: the once-per-floor cheat of death was spent. */
   oathUsed: boolean;
@@ -272,6 +275,8 @@ export interface Derived {
   dotImmune: boolean;    // poison/burn cannot land (genuGate AIRGAP)
   lowHpAtk: number;      // bonus damage fraction below half HP (Last Vigil)
   oathstone: boolean;    // survive one killing blow per floor (Last Vigil)
+  fullHpAtk: number;     // bonus damage fraction at full health (Longwatch)
+  thiefProof: boolean;   // nothing can be stolen (genuKey / the Admin)
   /** unique powers of worn vestige pieces (sets.ts powerIds) */
   powers: string[];
 }

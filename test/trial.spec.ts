@@ -6,6 +6,7 @@ import { bus } from '../src/core/events';
 import { TILE, type Monster } from '../src/core/types';
 import { rollSetPiece, trialSetFor, SETS } from '../src/core/data/sets';
 import { rollItem } from '../src/core/data/items';
+import { CLASSES } from '../src/core/data/classes';
 
 function freshGame(): Game {
   bus.clear();
@@ -65,13 +66,16 @@ describe('vestige set items', () => {
     expect(shallow.setId).toBe('genugate');
   });
 
-  it('the hardened crypt yields the Gate; classes get their sets otherwise', () => {
-    expect(trialSetFor('wretch', true)).toBe('genugate');
-    expect(trialSetFor('lich', true)).toBe('genugate');
-    expect(trialSetFor('cleric', false)).toBe('regalia');
-    expect(trialSetFor('lich', false)).toBe('regalia');
-    expect(trialSetFor('footman', false)).toBe('vigil');
-    expect(trialSetFor('wretch', false)).toBe('vigil');
+  it('the pacts speak first; otherwise the calling decides the set', () => {
+    expect(trialSetFor('wretch', ['iron'])).toBe('genugate');
+    expect(trialSetFor('lich', ['iron', 'famine'])).toBe('genugate'); // iron outranks
+    expect(trialSetFor('wretch', ['famine'])).toBe('tithegilded');
+    expect(trialSetFor('cleric', [])).toBe('regalia');
+    expect(trialSetFor('lich', [])).toBe('regalia');
+    expect(trialSetFor('ranger', [])).toBe('longwatch');
+    expect(trialSetFor('shadow', [])).toBe('longwatch');
+    expect(trialSetFor('footman', [])).toBe('vigil');
+    expect(trialSetFor('wretch', [])).toBe('vigil');
   });
 
   it('every set defines all three slots', () => {
@@ -249,6 +253,149 @@ describe('vestige powers', () => {
     const before = game.state.souls;
     game.manualMove(dir[0], dir[1]);
     expect(game.state.souls).toBeGreaterThan(before); // a plain kill paid souls
+  });
+});
+
+describe('the smith (reforging)', () => {
+  it('reforges an equipped vestige to current depth for gold, keeping the lock', () => {
+    seedRng(70);
+    const game = freshGame();
+    const run = game.state.run!;
+    run.depth = 20;
+    const stale = rollSetPiece('vigil', 'weapon', 5)!;
+    stale.locked = true;
+    run.gear.weapon = stale;
+    game.recalc();
+    const staleAtk = stale.stats.atk!;
+
+    // broke: the smith refuses
+    game.state.gold = 0;
+    expect(game.reforgeSlot('weapon')).toBe(false);
+
+    game.state.gold = 1e9;
+    const goldBefore = game.state.gold;
+    expect(game.reforgeSlot('weapon')).toBe(true);
+    const reforged = game.state.run!.gear.weapon!;
+    expect(reforged.depth).toBe(20);
+    expect(reforged.stats.atk!).toBeGreaterThan(staleAtk * 3);
+    expect(reforged.locked).toBe(true);
+    expect(game.state.gold).toBeLessThan(goldBefore);
+
+    // already current: no-op, no charge
+    const goldAfter = game.state.gold;
+    expect(game.reforgeSlot('weapon')).toBe(false);
+    expect(game.state.gold).toBe(goldAfter);
+  });
+
+  it('reforges from the satchel; refuses non-vestiges', () => {
+    seedRng(71);
+    const game = freshGame();
+    game.state.run!.depth = 15;
+    game.state.gold = 1e9;
+    game.state.inventory = [
+      rollSetPiece('regalia', 'charm', 4)!,
+      rollItem(15, 5), // a legendary is not the smith's business
+    ];
+    expect(game.reforgeFromInventory(0)).toBe(true);
+    expect(game.state.inventory[0].depth).toBe(15);
+    expect(game.reforgeFromInventory(1)).toBe(false);
+  });
+});
+
+describe('new sets & powers', () => {
+  function wear(game: Game, setId: string): void {
+    const run = game.state.run!;
+    run.gear.weapon = rollSetPiece(setId, 'weapon', 10);
+    run.gear.armor = rollSetPiece(setId, 'armor', 10);
+    run.gear.charm = rollSetPiece(setId, 'charm', 10);
+    game.recalc();
+  }
+
+  it('the Longwatch: deadeye crit, fleetfoot speed, crit-damage and full-hp bonuses', () => {
+    seedRng(72);
+    const game = freshGame();
+    const before = { crit: game.d.crit, tick: game.d.tickRate };
+    wear(game, 'longwatch');
+    expect(game.d.crit).toBeGreaterThanOrEqual(before.crit + 20);
+    expect(game.d.tickRate).toBeCloseTo(before.tick + 1, 5);
+    expect(game.d.critDmg).toBe(2.4);
+    expect(game.d.fullHpAtk).toBeCloseTo(0.6);
+    expect(game.d.dodge).toBeGreaterThanOrEqual(20);
+  });
+
+  it('the Tithe-Gilded: golden tide and doubled marrow', () => {
+    seedRng(73);
+    const game = freshGame();
+    game.state.upgrades['marrow'] = 5; // 40% conversion
+    game.recalc();
+    const baseGold = game.d.goldMult;
+    const baseMarrow = game.d.marrowPct;
+    wear(game, 'tithegilded');
+    expect(game.d.goldMult / baseGold).toBeGreaterThan(2.1); // ×2.2 + gear goldPct
+    expect(game.d.marrowPct).toBeCloseTo(baseMarrow * 2, 5);
+    expect(game.d.powers).toContain('midas');
+  });
+
+  it('conduction echoes minion strikes; the choir endures interceptions', () => {
+    seedRng(74);
+    const game = freshGame();
+    game.state.souls = 1e6;
+    game.buyMinion('skeleton');
+    game.buyMinion('ghoul');
+    wear(game, 'regalia');
+    expect(game.d.powers).toContain('conduction');
+    expect(game.d.powers).toContain('choir');
+
+    // choir: an intercepted hit hurts the minion half as much
+    const run = game.state.run!;
+    const dirs = [[0, 1], [1, 0], [0, -1], [-1, 0]] as const;
+    const dir = dirs.find(([dx, dy]) =>
+      run.floor.tiles[(game.heroPos.y + dy) * run.floor.w + (game.heroPos.x + dx)] !== TILE.WALL)!;
+    const dummy: Monster = {
+      id: 9100, key: 't', name: 'Echo Dummy', glyph: 'd', color: '#fff',
+      x: game.heroPos.x + dir[0], y: game.heroPos.y + dir[1],
+      hp: 1e9, maxHp: 1e9, atk: 0.0001, def: 0,
+      specials: [], xp: 1, tier: 1, elite: false, boss: false, mini: false,
+      enchants: [], trial: false, awake: true, slowSkip: false, summonCd: 0, stolenGold: 0,
+    };
+    run.floor.monsters = [dummy];
+    const skontrib = game.minionAtk('skeleton') + game.minionAtk('ghoul');
+    game.manualMove(dir[0], dir[1]);
+    const dealt = 1e9 - dummy.hp;
+    // hero hit + minion hits + 50% echoes: clearly above hero+minions alone
+    expect(dealt).toBeGreaterThan(game.d.atk * 0.85 + skontrib * 0.85);
+  });
+
+  it('the Admin logs in after Defense in Depth, survives reaps, and sees everything', () => {
+    seedRng(75);
+    const game = freshGame();
+    expect(CLASSES.some((c) => c.id === 'admin')).toBe(true);
+    expect(game.state.classesUnlocked).not.toContain('admin');
+
+    // wear the full genuGate → the feat fires → the port opens
+    const run = game.state.run!;
+    run.gear.weapon = rollSetPiece('genugate', 'weapon', 10);
+    run.gear.armor = rollSetPiece('genugate', 'armor', 10);
+    run.gear.charm = rollSetPiece('genugate', 'charm', 10);
+    game.recalc();
+    game.checkAchievements();
+    expect(game.state.achievements['genuset']).toBe(true);
+    expect(game.state.classesUnlocked).toContain('admin');
+
+    // root access survives the Reaping
+    game.state.soulsThisReap = 50_000;
+    game.state.bestDepthThisReap = 12;
+    expect(game.doReap()).toBe(true);
+    expect(game.state.classesUnlocked).toContain('admin');
+
+    // and an Admin vessel knows the whole floor on arrival
+    game.setClass('admin');
+    game.tick(100); // summon
+    const floor = game.state.run!.floor;
+    expect(game.state.run!.klass).toBe('admin');
+    expect(floor.seen.every((v) => v === 1)).toBe(true);
+    expect(game.d.shrinesFree).toBe(true);
+    expect(game.d.thiefProof).toBe(true);
   });
 });
 

@@ -33,6 +33,9 @@ export const RELICS: RelicDef[] = [
   { id: 'leash',    name: 'Leash of the Mawmother',   desc: '+35% minion power. They heel. Mostly.', minionMult: 1.35 },
   { id: 'shroud',   name: 'Shroud of Quiet Hands',    desc: '+20% chance to keep gear on death.', keepGear: 20 },
   { id: 'donation', name: 'Cardinal’s Ledger',        desc: 'Shrines are free. The Church owes you.', shrinesFree: true },
+  { id: 'airgap',   name: 'Air-Gapped Phylactery',    desc: '+25% souls. Nothing gets in. Nothing gets out. The souls keep.', soulMult: 1.25 },
+  { id: 'patchnotes', name: 'The Patch Notes, Read at Last', desc: '+35% XP. Everything you were doing wrong, enumerated.', xpMult: 1.35 },
+  { id: 'coldspare', name: 'Cold Spare',              desc: '+20% chance to keep gear on death. There is always another in the rack.', keepGear: 20 },
 ];
 
 export function relicById(id: string): RelicDef | undefined {

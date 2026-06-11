@@ -205,6 +205,12 @@ function onClick(ev: MouseEvent): void {
     case 'lock-toggle':
       game.toggleLock(id as 'weapon' | 'armor' | 'charm');
       break;
+    case 'reforge':
+      game.reforgeSlot(id as 'weapon' | 'armor' | 'charm');
+      break;
+    case 'inv-reforge':
+      game.reforgeFromInventory(Number(id));
+      break;
     case 'toggle-automend':
       game.state.settings.autoMend = !game.state.settings.autoMend;
       queueRender();
@@ -584,6 +590,17 @@ function itemTip(item: Item, compareWith?: Item | null): string {
   return attrSafe(lines.join('<br>'));
 }
 
+/** The smith's button for a Vestige that has fallen behind the depths. */
+function reforgeBtn(item: Item, act: string, id: string): string {
+  if (item.rarity !== 6 || !item.setId) return '';
+  const target = game.reforgeTargetDepth();
+  if (item.depth >= target) return '';
+  const cost = B.reforgeCost(target);
+  const afford = game.state.gold >= cost;
+  return `<button class="btn tiny ${afford ? '' : 'cant'}" data-act="${act}" data-id="${id}"
+    data-tip="Reforge to depth ${target} strength — the smith charges ⛁ ${fmt(cost)} gold.">⚒ d${item.depth}→${target}</button>`;
+}
+
 function gearLine(slot: 'weapon' | 'armor' | 'charm', item: Item | null): string {
   const slotNames = { weapon: 'Weapon', armor: 'Armor', charm: 'Charm' };
   if (!item) {
@@ -595,6 +612,7 @@ function gearLine(slot: 'weapon' | 'armor' | 'charm', item: Item | null): string
         <button class="btn tiny" data-act="unequip" data-id="${slot}" data-tip="Unequip into the satchel">▼</button>
         ${game.qolUnlocked('seal') ? `<button class="btn tiny ${item.locked ? 'toggle on' : ''}" data-act="lock-toggle" data-id="${slot}"
           data-tip="${item.locked ? 'Locked: auto-equip will never replace this. Click to unlock.' : 'Lock this item so auto-equip can never replace it.'}">${item.locked ? '🔒' : '🔓'}</button>` : ''}
+        ${reforgeBtn(item, 'reforge', slot)}
       </span>
       <span class="gear-name${rCls(item)}" style="${rStyle(item)}" data-tip="${itemTip(item)}">${esc(item.name)} ${kindChip(item)}</span>
       <span class="gear-stats">${describeItem(item).join(' · ')}</span>
@@ -625,6 +643,7 @@ function satchelSection(): string {
           <span class="inv-actions">
             <button class="btn tiny ${usable ? '' : 'cant'}" data-act="inv-equip" data-id="${idx}" data-name="${esc(item.name)}"
               data-tip="${usable ? 'Equip (swaps with the current item)' : esc(`This vessel cannot wield ${WEAPON_KINDS[item.kind!]?.label ?? 'this'} weapons.`)}">equip</button>
+            ${reforgeBtn(item, 'inv-reforge', String(idx))}
             <button class="btn tiny danger" data-act="inv-salvage" data-id="${idx}" data-name="${esc(item.name)}"
               data-tip="Scrap for ${fmt(B.SALVAGE_GOLD_BY_RARITY[item.rarity])} gold">⚒</button>
           </span>
@@ -784,7 +803,9 @@ function panelNecro(): string {
   };
 
   const classCards = CLASSES.map((c) => {
-    if (c.cost < 0 && !game.classUnlockedByEssence(c.id)) {
+    // achievement-hidden classes are invisible until earned (not in your face)
+    if (c.hiddenUnlock && !s.classesUnlocked.includes(c.id)) return '';
+    if (c.cost < 0 && !c.hiddenUnlock && !game.classUnlockedByEssence(c.id)) {
       return `
         <div class="card locked">
           <div class="card-head"><span class="card-name">${esc(c.name)}</span><span class="card-lvl">essence</span></div>

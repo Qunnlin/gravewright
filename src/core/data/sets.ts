@@ -46,13 +46,13 @@ export const SETS: SetDef[] = [
       },
       {
         slot: 'armor', name: 'genuWall, the Stateful Aegis',
-        affixes: { def: 0.8, hpPct: 0.5, dodge: 0.3 },
+        affixes: { def: 1.0, regen: 0.45, hpPct: 0.35, dodge: 0.1 },
         powerId: 'stateful', powerName: 'Stateful',
         powerDesc: 'After 5 turns without taking a hit, the next hit is dropped outright.',
       },
       {
         slot: 'charm', name: 'genuKey, the Trusted Token',
-        affixes: { soulPct: 0.5, goldPct: 0.55, regen: 0.35 },
+        affixes: { regen: 0.55, goldPct: 0.5, soulPct: 0.3 },
         powerId: 'leastpriv', powerName: 'Least Privilege',
         powerDesc: 'Thieves cannot steal from you, and shrines charge half.',
       },
@@ -74,13 +74,13 @@ export const SETS: SetDef[] = [
       },
       {
         slot: 'armor', name: 'Shroud of the Hollow Choir',
-        affixes: { def: 0.5, hpPct: 0.6, regen: 0.4 },
+        affixes: { def: 0.8, regen: 0.5, hpPct: 0.35 },
         powerId: 'choir', powerName: 'The Choir Endures',
         powerDesc: 'Minions take half damage when shielding the vessel.',
       },
       {
         slot: 'charm', name: 'Phylactery of True Names',
-        affixes: { soulPct: 0.6, xpPct: 0.5 },
+        affixes: { soulPct: 0.45, xpPct: 0.4, regen: 0.35 },
         powerId: 'truenames', powerName: 'True Names',
         powerDesc: 'Every kill surrenders its name: bonus souls per kill, scaling with depth.',
       },
@@ -92,7 +92,7 @@ export const SETS: SetDef[] = [
     id: 'vigil',
     name: 'The Last Vigil',
     flavor: 'Worn by the nine who held the door. The door held.',
-    forClasses: ['wretch', 'footman', 'ranger', 'berserker', 'shadow'],
+    forClasses: ['wretch', 'footman', 'berserker'],
     pieces: [
       {
         slot: 'weapon', name: 'Vigilkeeper’s Edge', kind: 'blade',
@@ -102,19 +102,75 @@ export const SETS: SetDef[] = [
       },
       {
         slot: 'armor', name: 'Bastion of the Ninth Vault',
-        affixes: { def: 0.9, hpPct: 0.5 },
+        affixes: { def: 1.1, regen: 0.4, hpPct: 0.35 },
         powerId: 'unbroken', powerName: 'Unbroken',
         powerDesc: 'Regenerates 1.5% max HP per turn while below half health.',
       },
       {
         slot: 'charm', name: 'The Oath-Knot',
-        affixes: { crit: 0.5, hpPct: 0.3 },
+        affixes: { atk: 0.45, crit: 0.3, hpPct: 0.3 },
         powerId: 'laststand', powerName: 'Last Stand',
         powerDesc: 'When the Oath refuses a killing blow, rise at 30% health, blessed.',
       },
     ],
     bonus2: 'Shieldwall: +10% block.',
     bonus3: 'DEAD MAN’S OATH: +60% damage below half health, and once per floor a killing blow is survived at 1 HP.',
+  },
+  {
+    id: 'longwatch',
+    name: 'The Longwatch',
+    flavor: 'They watched the dark so long the dark blinked first.',
+    forClasses: ['ranger', 'shadow'],
+    pieces: [
+      {
+        slot: 'weapon', name: 'Watchman’s Recurve', kind: 'bow',
+        affixes: { atk: 0.9, crit: 0.3 },
+        powerId: 'deadeye', powerName: 'Deadeye',
+        powerDesc: '+20% critical chance. The dark has nowhere to hide.',
+      },
+      {
+        slot: 'armor', name: 'Stalker’s Shroud',
+        affixes: { def: 0.8, regen: 0.45, dodge: 0.1 },
+        powerId: 'fleetfoot', powerName: 'Fleetfoot',
+        powerDesc: '+1 action per second. The watch never lingers.',
+      },
+      {
+        slot: 'charm', name: 'The Marked Coin',
+        affixes: { goldPct: 0.45, bonePct: 0.4, regen: 0.3 },
+        powerId: 'quarry', powerName: 'Quarry',
+        powerDesc: 'Elites and champions pay double gold and bones when felled.',
+      },
+    ],
+    bonus2: 'Keen eyes: critical hits deal ×2.4 damage (up from ×2).',
+    bonus3: 'THE LONG WATCH: +20% dodge, and +60% damage while at full health.',
+  },
+  {
+    id: 'tithegilded',
+    name: 'The Tithe-Gilded',
+    flavor: 'Starved into wealth. The famine taught them what gold is for.',
+    forClasses: null, // the Pact of Famine yields the golden set
+    pieces: [
+      {
+        slot: 'weapon', name: 'Coinblade, Paid in Full', kind: 'blade',
+        affixes: { atk: 0.85, goldPct: 0.5 },
+        powerId: 'tollkeeper', powerName: 'Tollkeeper',
+        powerDesc: 'Every kill pays its toll in gold.',
+      },
+      {
+        slot: 'armor', name: 'Gildedmail of the Hollow Purse',
+        affixes: { def: 0.9, regen: 0.4, goldPct: 0.3 },
+        powerId: 'midas', powerName: 'Midas Scrap',
+        powerDesc: 'Salvage pays triple.',
+      },
+      {
+        slot: 'charm', name: 'The Ledgerstone',
+        affixes: { goldPct: 0.55, bonePct: 0.45 },
+        powerId: 'usury', powerName: 'Usury',
+        powerDesc: 'Every shrine payment returns 150% of its cost — in bones.',
+      },
+    ],
+    bonus2: 'Gilded: +50% gold.',
+    bonus3: 'GOLDEN TIDE: gold gain ×2.2 instead, and Marrow Memory converts twice as much on death.',
   },
 ];
 
@@ -148,9 +204,12 @@ export function rollSetPiece(setId: string, slot: Slot, depth: number): Item | n
   return item;
 }
 
-/** Which set the Sealed Hall awards: the hardened crypt yields the Gate. */
-export function trialSetFor(classId: string, ironPactActive: boolean): string {
-  if (ironPactActive) return 'genugate';
+/** Which set the Sealed Hall awards. The pacts speak first: a hardened
+ *  crypt yields the Gate, famine yields the golden set; otherwise the
+ *  vessel's calling decides. */
+export function trialSetFor(classId: string, curseIds: string[]): string {
+  if (curseIds.includes('iron')) return 'genugate';
+  if (curseIds.includes('famine')) return 'tithegilded';
   const named = SETS.find((s) => s.forClasses?.includes(classId));
   return named?.id ?? 'vigil';
 }

@@ -227,6 +227,12 @@ export const TRIAL_MAX_ALIVE = 35;
 /** The Satchel: carried-item capacity. */
 export const INVENTORY_CAP = 10;
 
+/** Reforging a Vestige to the current depth costs roughly several floors'
+ *  worth of gold income — the late-game gold sink. */
+export function reforgeCost(toDepth: number): number {
+  return Math.ceil(40 * goldPile(toDepth));
+}
+
 /** ---- dungeon population ---- */
 
 export function monsterCount(depth: number): number {
