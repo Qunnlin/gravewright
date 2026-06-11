@@ -37,6 +37,21 @@ how-tos and `CLAUDE.md` for the contribution rules.
 - [x] Depth-skip (PR #4): **Ravenous Descent** essence upgrade — floors you
   overwhelm 2.5× collapse unentered (vaults included), tributing scraps;
   bosses and Sealed Halls always hold.
+- [x] The Smith (PR #7): reforge Vestiges to current-depth strength for gold
+  (⚒ buttons on gear & satchel; ~40 gold-piles per reforge; locks survive).
+- [x] Two new Vestige sets (PR #7): **The Longwatch** (Ranger/Shadow — Deadeye,
+  Fleetfoot, Quarry; full-set: ×2.4 crits + full-health damage) and **The
+  Tithe-Gilded** (earned under the Pact of Famine — Tollkeeper, Midas Scrap,
+  Usury; full-set: Golden Tide).
+- [x] genua easter eggs (PR #7): hidden class **The Admin** (root in a dead
+  domain — unlocked by wearing the full genuGate, survives reaps, sees every
+  floor plan, free shrines, theft-proof), three genua relics (Air-Gapped
+  Phylactery, The Patch Notes, Cold Spare), a GeekWeek vessel epithet and a
+  once-in-a-blue-moon murmur.
+- [x] Trial overhaul + sets balance pass (PR #7): the Sealed Hall is now a
+  real arena — 60-turn survival onslaught (~40+ enemies) ending in the Avatar,
+  no stairs, doubled rewards. Vestiges: budget 5× base (above the mean
+  Legendary primary) and every piece carries a named unique power.
 - [x] Big-rebalance part 1 (PR #4): late-depth ramp (HP ×1.08^(d−12),
   ATK ×1.05^(d−12)) + difficulty probes & wall-expedition instrumentation in
   the balance report. Measured: cycle-1 deaths 2→6, frontier monster threat
@@ -69,26 +84,12 @@ how-tos and `CLAUDE.md` for the contribution rules.
   monster curves / income growth / wrath slope / item budgets until the
   frontier stays lethal at every stage. Tie in the trial overhaul as the
   intended hard content.*
-- [ ] **(P1, M) Sets balance pass** — Vestiges have predictable but few stat
-  types and should be *clearly* stronger than Legendaries; right now a good
-  Legendary can out-stat them. Either raise SET_BUDGET_MULT, give pieces more
-  stat lines, or add enchant-like unique powers per piece (preferred: powers —
-  predictable stats are the identity, raw numbers aren't).
-- [ ] **(P1, M) Trial overhaul: bigger, longer, way harder** — the Sealed Hall
-  should be a special stage in the dungeon's theme: one huge room, survive a
-  timed onslaught of many enemies (not 3 small waves). Rewards scale with the
-  new difficulty. *Dedicated genFloor mode (one giant hall), wave-spawner on a
-  turn timer, victory = survive N turns or clear all; keep the 40% forfeit.*
 - [ ] **(P2, M) More essence sinks** — e.g. *very slightly* increased trial
   and unique-drop chances, very expensive, carefully balanced. *New essence
   upgrades with tiny eff values; cap levels hard.*
 - [ ] **(P2, M) More gold sinks** — gold piles up mid-run with little to do.
   Candidates: in-run gambler/peddler, shrine re-rolls, and the item-raising
   service below.
-- [ ] **(P2, M) Raise Vestiges to current depth strength (for gold)** — very
-  expensive re-forging so an old set piece scales up. ⚠ possibly OP — gate
-  behind playtesting. *rollSetPiece(setId, slot, newDepth) replace-in-place;
-  cost exponential in depth delta.*
 - [ ] **(P2, M) Loot goblin** — ultra-rare special spawn, distinct look, tries
   to FLEE (new AI: run away from hero), drops a Vestige (or big loot) when
   caught. *Flee AI = step uphill on the hero BFS field; despawn after N turns.*
@@ -101,8 +102,6 @@ how-tos and `CLAUDE.md` for the contribution rules.
 - [ ] **(P2, M) More item modifiers** — on-kill gold burst, shrine discount,
   +trial souls, minion lifesteal, thorns, status-duration reduction. *Each:
   AFFIX_DEFS entry + scoreItem weight + recalc/combat hook + tooltip label.*
-- [ ] **(P2, M) One or two more Vestige sets** — e.g. Ranger/Shadow bow-and-
-  knife set, a greed/gold set. *Pattern in data/sets.ts + recalc bonuses.*
 - [ ] **(P3, M) Lower classes less obsolete late game** — gather ideas:
   class mastery bonuses for vessels summoned N times, per-class feats,
   class-specific set interactions.
@@ -156,10 +155,3 @@ how-tos and `CLAUDE.md` for the contribution rules.
 
 ## genua / GeekWeek easter eggs (subtle, never in-your-face)
 
-- [ ] **(P2, M) Hidden class "The Admin"** — cryptic unlock (complete the
-  genuGate? a riddle?). Perk ideas: sees the whole floor (monitoring), shrines
-  free (root access), perimeter bonus.
-- [ ] **(P2, S) genua-flavored relics** — "Air-Gapped Phylactery", "The Patch
-  Notes (read at last)", "Cold Spare".
-- [ ] **(P3, S) GeekWeek references** — rare log line, a feat, a once-in-a-
-  blue-moon vessel name ("Intern of the GeekWeek").

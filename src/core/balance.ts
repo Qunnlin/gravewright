@@ -217,9 +217,21 @@ export const TRIAL_CHANCE = 0.04;
 export const TRIAL_GUARANTEE_DEPTH = 14;
 /** Losing (or fleeing) the trial forfeits this share of held souls. */
 export const TRIAL_FORFEIT = 0.4;
+/** The Sealed Hall onslaught: survive this many hero turns... */
+export const TRIAL_TURNS = 60;
+/** ...with a spawn pack arriving every N turns, */
+export const TRIAL_SPAWN_EVERY = 4;
+/** capped at this many living trial monsters. */
+export const TRIAL_MAX_ALIVE = 35;
 
 /** The Satchel: carried-item capacity. */
 export const INVENTORY_CAP = 10;
+
+/** Reforging a Vestige to the current depth costs roughly several floors'
+ *  worth of gold income — the late-game gold sink. */
+export function reforgeCost(toDepth: number): number {
+  return Math.ceil(40 * goldPile(toDepth));
+}
 
 /** ---- dungeon population ---- */
 

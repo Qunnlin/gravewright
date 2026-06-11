@@ -144,12 +144,23 @@ export interface RunState {
   curseIds: string[];
   /** Click-to-move override target. */
   manualTarget: { x: number; y: number } | null;
-  /** Active boss-rush trial (wave counter); null outside trials. */
-  trialActive: { wave: number; totalWaves: number } | null;
+  /** The Sealed Hall onslaught; null outside trials. */
+  trialActive: {
+    turnsSurvived: number;
+    totalTurns: number;
+    /** depth to return the victor to */
+    returnDepth: number;
+    phase: 'onslaught' | 'avatar';
+    /** wrath/curse multipliers frozen at the moment the wager was sworn —
+     *  souls earned mid-trial must not escalate the onslaught itself */
+    mods: { monsterHpMult: number; monsterAtkMult: number; monsterCountMult: number };
+  } | null;
   /** Last Vigil 3-piece: the once-per-floor cheat of death was spent. */
   oathUsed: boolean;
   /** shrines used by THIS vessel (the ritual counts per life) */
   shrinesThisRun: number;
+  /** turn of the last direct hit taken (genuWall's Stateful power) */
+  lastHitTurn: number;
 }
 
 export interface MinionState {
@@ -264,6 +275,10 @@ export interface Derived {
   dotImmune: boolean;    // poison/burn cannot land (genuGate AIRGAP)
   lowHpAtk: number;      // bonus damage fraction below half HP (Last Vigil)
   oathstone: boolean;    // survive one killing blow per floor (Last Vigil)
+  fullHpAtk: number;     // bonus damage fraction at full health (Longwatch)
+  thiefProof: boolean;   // nothing can be stolen (genuKey / the Admin)
+  /** unique powers of worn vestige pieces (sets.ts powerIds) */
+  powers: string[];
 }
 
 export const TILE = {

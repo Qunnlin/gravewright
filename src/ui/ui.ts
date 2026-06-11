@@ -91,11 +91,13 @@ function onEvent(e: GameEvent): void {
       showModal(`
         <h2>◈ The Sealed Hall</h2>
         <p class="intro-tag">the shrine hums with old wagers — the vessel holds its breath</p>
-        <p>Three waves of keepers, each crueler than the last, scaled to this depth
-        and the crypt's mood.</p>
+        <p>Swearing transports the vessel into the Hall itself: one vast arena,
+        <b>${fmt(B.TRIAL_TURNS)} turns of escalating onslaught</b>, then the
+        <b>Avatar of the Sealed Hall</b>. There are <b>no stairs</b>. No retreat —
+        only victory, death, or reclamation.</p>
         <p><b>Victory:</b> a <span class="rainbow-text">Vestige</span> — a named
-        set-piece fitted to this vessel — and a draught of souls.</p>
-        <p><b>Defeat or flight:</b> <b class="c-souls">two-fifths of your held souls</b>,
+        set-piece with a unique power, fitted to this vessel — and a deep draught of souls.</p>
+        <p><b>Defeat:</b> <b class="c-souls">two-fifths of your held souls</b>,
         and the dead vessel pays nothing.</p>
         <button class="btn primary" data-act="trial-accept">◈ Swear the Trial</button>
         <button class="btn" data-act="trial-decline">Walk away</button>
@@ -202,6 +204,12 @@ function onClick(ev: MouseEvent): void {
       break;
     case 'lock-toggle':
       game.toggleLock(id as 'weapon' | 'armor' | 'charm');
+      break;
+    case 'reforge':
+      game.reforgeSlot(id as 'weapon' | 'armor' | 'charm');
+      break;
+    case 'inv-reforge':
+      game.reforgeFromInventory(Number(id));
       break;
     case 'toggle-automend':
       game.state.settings.autoMend = !game.state.settings.autoMend;
@@ -383,7 +391,12 @@ export function uiFrame(): void {
     $('hud-name').textContent = run.heroName;
     $('hud-class').textContent = `${classById(run.klass).name} · Lv ${run.level}`;
     $('hud-depth').textContent = `Depth ${run.depth}`;
-    $('hud-goal').textContent = s.auto ? game.goal : 'Manual control';
+    const trial = run.trialActive;
+    $('hud-goal').textContent = trial
+      ? trial.phase === 'avatar'
+        ? '◈ FELL THE AVATAR'
+        : `◈ survive ${trial.turnsSurvived}/${trial.totalTurns}`
+      : s.auto ? game.goal : 'Manual control';
     $('hud-hp-text').textContent = `${fmt(Math.max(0, Math.ceil(run.hp)))} / ${fmt(d.maxHp)}`;
     ($('hud-hp-fill') as HTMLElement).style.width =
       `${Math.max(0, Math.min(100, (run.hp / d.maxHp) * 100))}%`;
@@ -537,6 +550,10 @@ function itemTip(item: Item, compareWith?: Item | null): string {
       const worn = (['weapon', 'armor', 'charm'] as const)
         .filter((s) => gear[s]?.setId === item.setId).length;
       lines.push(`<span class='rainbow-text tip-set'>${esc(set.name)}</span> <span class='tip-sub'>· ${worn}/3 worn</span>`);
+      const piece = set.pieces.find((pp) => pp.slot === item.slot);
+      if (piece) {
+        lines.push(`<span class='tip-fav'>✦ ${esc(piece.powerName)}</span> <span class='tip-kind'>${esc(piece.powerDesc)}</span>`);
+      }
       lines.push(`<span class='tip-sub'>${esc(set.flavor)}</span>`);
       lines.push(`<span class='${worn >= 2 ? 'tip-diff-up' : 'tip-sub'}'>[2] ${esc(set.bonus2)}</span>`);
       lines.push(`<span class='${worn >= 3 ? 'tip-diff-up' : 'tip-sub'}'>[3] ${esc(set.bonus3)}</span>`);
@@ -573,6 +590,17 @@ function itemTip(item: Item, compareWith?: Item | null): string {
   return attrSafe(lines.join('<br>'));
 }
 
+/** The smith's button for a Vestige that has fallen behind the depths. */
+function reforgeBtn(item: Item, act: string, id: string): string {
+  if (item.rarity !== 6 || !item.setId) return '';
+  const target = game.reforgeTargetDepth();
+  if (item.depth >= target) return '';
+  const cost = B.reforgeCost(target);
+  const afford = game.state.gold >= cost;
+  return `<button class="btn tiny ${afford ? '' : 'cant'}" data-act="${act}" data-id="${id}"
+    data-tip="Reforge to depth ${target} strength — the smith charges ⛁ ${fmt(cost)} gold.">⚒ d${item.depth}→${target}</button>`;
+}
+
 function gearLine(slot: 'weapon' | 'armor' | 'charm', item: Item | null): string {
   const slotNames = { weapon: 'Weapon', armor: 'Armor', charm: 'Charm' };
   if (!item) {
@@ -584,6 +612,7 @@ function gearLine(slot: 'weapon' | 'armor' | 'charm', item: Item | null): string
         <button class="btn tiny" data-act="unequip" data-id="${slot}" data-tip="Unequip into the satchel">▼</button>
         ${game.qolUnlocked('seal') ? `<button class="btn tiny ${item.locked ? 'toggle on' : ''}" data-act="lock-toggle" data-id="${slot}"
           data-tip="${item.locked ? 'Locked: auto-equip will never replace this. Click to unlock.' : 'Lock this item so auto-equip can never replace it.'}">${item.locked ? '🔒' : '🔓'}</button>` : ''}
+        ${reforgeBtn(item, 'reforge', slot)}
       </span>
       <span class="gear-name${rCls(item)}" style="${rStyle(item)}" data-tip="${itemTip(item)}">${esc(item.name)} ${kindChip(item)}</span>
       <span class="gear-stats">${describeItem(item).join(' · ')}</span>
@@ -614,6 +643,7 @@ function satchelSection(): string {
           <span class="inv-actions">
             <button class="btn tiny ${usable ? '' : 'cant'}" data-act="inv-equip" data-id="${idx}" data-name="${esc(item.name)}"
               data-tip="${usable ? 'Equip (swaps with the current item)' : esc(`This vessel cannot wield ${WEAPON_KINDS[item.kind!]?.label ?? 'this'} weapons.`)}">equip</button>
+            ${reforgeBtn(item, 'inv-reforge', String(idx))}
             <button class="btn tiny danger" data-act="inv-salvage" data-id="${idx}" data-name="${esc(item.name)}"
               data-tip="Scrap for ${fmt(B.SALVAGE_GOLD_BY_RARITY[item.rarity])} gold">⚒</button>
           </span>
@@ -773,7 +803,9 @@ function panelNecro(): string {
   };
 
   const classCards = CLASSES.map((c) => {
-    if (c.cost < 0 && !game.classUnlockedByEssence(c.id)) {
+    // achievement-hidden classes are invisible until earned (not in your face)
+    if (c.hiddenUnlock && !s.classesUnlocked.includes(c.id)) return '';
+    if (c.cost < 0 && !c.hiddenUnlock && !game.classUnlockedByEssence(c.id)) {
       return `
         <div class="card locked">
           <div class="card-head"><span class="card-name">${esc(c.name)}</span><span class="card-lvl">essence</span></div>

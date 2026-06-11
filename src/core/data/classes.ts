@@ -8,7 +8,12 @@ export interface ClassDef {
   hpMult: number;
   atkMult: number;
   perk: string;            // human description
+  /** unlocked by an achievement instead of souls/essence; hidden until earned */
+  hiddenUnlock?: string;
   /** mechanical hooks read by the sim */
+  revealMap?: boolean;     // the whole floor plan is known on arrival
+  shrinesFree?: boolean;   // shrines never charge
+  thiefProof?: boolean;    // nothing can be stolen
   blockPct?: number;       // flat % damage reduction
   ranged?: boolean;        // attacks at range 3
   healOnKill?: number;     // % max hp per kill
@@ -55,6 +60,13 @@ export const CLASSES: ClassDef[] = [
     glyphColor: '#bb99ff', cost: 38000, hpMult: 0.9, atkMult: 1.2,
     perk: '28% dodge. +18% crit chance.',
     dodge: 28, crit: 18,
+  },
+  {
+    id: 'admin', name: 'The Admin', title: 'root in a dead domain',
+    glyphColor: '#7c4dff', cost: -1, hiddenUnlock: 'genuset',
+    hpMult: 1.15, atkMult: 1.1,
+    perk: 'Root access: the floor plan is always known, shrines never charge, and nothing can be stolen.',
+    revealMap: true, shrinesFree: true, thiefProof: true,
   },
   {
     id: 'lich', name: 'Lich Vessel', title: 'a shard of your own dark heart',
