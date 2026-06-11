@@ -242,6 +242,35 @@ describe('the satchel', () => {
     expect(game.state.inventory).toHaveLength(0);
   });
 
+  it('protect-vestiges keeps set pieces safe even at protect "nothing"', () => {
+    seedRng(15);
+    const game = freshGame();
+    game.state.settings.autoEquip = false;
+    game.state.settings.protectRarity = 7; // nothing rarity-protected
+    game.state.settings.protectVestiges = true;
+
+    const vestige: Item = {
+      slot: 'charm', name: 'Test Vestige', rarity: 6, depth: 10,
+      stats: { soulPct: 30 }, score: 27, setId: 'vigil',
+    };
+    game.acquireItem(vestige);
+    expect(game.state.inventory.some((i) => i.rarity === 6)).toBe(true);
+
+    // salvage-all spares it
+    game.acquireItem(mkWeapon('blade', 12, 'Fodder'));
+    game.salvageAllInventory();
+    expect(game.state.inventory.map((i) => i.name)).toEqual(['Test Vestige']);
+
+    // overflow scraps everything else first
+    for (let i = 0; i < INVENTORY_CAP; i++) game.acquireItem(mkWeapon('blade', 20 + i, `Bulk ${i}`));
+    expect(game.state.inventory.some((i) => i.name === 'Test Vestige')).toBe(true);
+
+    // toggled off: the vestige burns with the rest
+    game.state.settings.protectVestiges = false;
+    game.salvageAllInventory();
+    expect(game.state.inventory).toHaveLength(0);
+  });
+
   it('class-biased loot mostly rolls usable weapon kinds', () => {
     seedRng(8);
     let usable = 0;

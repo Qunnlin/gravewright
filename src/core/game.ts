@@ -77,7 +77,7 @@ export function defaultState(): GameState {
     settings: {
       sound: true, autoBuyBones: true, particles: true,
       autoEquip: true, autoSalvageBelow: 0, protectRarity: 4,
-      buyAmount: 1, autoMend: false, ravenousActive: true,
+      buyAmount: 1, autoMend: false, protectVestiges: true, ravenousActive: true,
     },
   };
 }
@@ -1092,8 +1092,11 @@ export class Game {
       return;
     }
     const prot = this.state.settings.protectRarity;
-    // locked items are sacrosanct; protected rarities go only as a last resort
-    const rank = (it: Item) => (it.locked ? 2 : it.rarity >= prot ? 1 : 0);
+    const pv = this.state.settings.protectVestiges;
+    // locked items are sacrosanct; protected vestiges next; protected
+    // rarities go only as a last resort before the rest
+    const rank = (it: Item) =>
+      it.locked ? 3 : pv && it.rarity === 6 ? 2 : it.rarity >= prot ? 1 : 0;
     const candidates = [
       ...inv.map((it, i) => ({ it, i })),
       { it: item, i: -1 },
@@ -1227,8 +1230,10 @@ export class Game {
     const inv = this.state.inventory;
     if (inv.length === 0) return;
     const prot = this.state.settings.protectRarity;
-    const kept = inv.filter((it) => it.locked || it.rarity >= prot);
-    const scrapped = inv.filter((it) => !it.locked && it.rarity < prot);
+    const pv = this.state.settings.protectVestiges;
+    const safe = (it: Item) => it.locked || (pv && it.rarity === 6) || it.rarity >= prot;
+    const kept = inv.filter(safe);
+    const scrapped = inv.filter((it) => !safe(it));
     if (scrapped.length === 0) {
       log('Everything in the satchel is protected. Nothing scrapped.', 'system');
       return;

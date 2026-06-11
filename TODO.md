@@ -29,6 +29,8 @@ how-tos and `CLAUDE.md` for the contribution rules.
 - [x] Souls-on-death indicator moved onto the souls plaque as a small `+N`
   (PR #2).
 - [x] Pending reap gain shown as a small `+N` on the essence plaque (PR #2).
+- [x] Protect-vestiges setting (PR #5): set pieces exempt from every automatic
+  scrap, toggleable once the Scrap-Tithe is owned; default ON.
 
 - [x] Defense rework (PR #4): hero mitigation pivot now scales with depth
   (`def÷(def+25+6·depth)`) — DEF is a treadmill, not a one-time 80% checkbox.
@@ -42,9 +44,6 @@ how-tos and `CLAUDE.md` for the contribution rules.
 
 ## Quick wins (S effort, mostly QoL)
 
-- [ ] **(P2, S) Protect-vestige-only option** — a protect tier between
-  'legendary+' and 'nothing' that shields only set pieces. *PROTECT_MODES
-  entry; mind the sentinel ordering (7 = nothing).*
 - [ ] **(P2, S) Retroactive auto-scrap** — when the auto-scrap rule changes
   (or on pickup), items already in the satchel that fall under it get scrapped.
   *Apply filter on settings change + acquireItem; respect protect rule.*
