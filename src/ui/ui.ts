@@ -633,7 +633,8 @@ function panelVessel(): string {
   const d = game.d;
   const run = s.run;
   const klass = classById(run?.klass ?? s.curClass);
-  const mit = Math.round(B.mitigation(d.def) * 100);
+  const mitDepth = run?.depth ?? 1;
+  const mit = Math.round(B.heroMitigation(d.def, mitDepth) * 100);
 
   const statRows: [string, string, string][] = [
     ['Max HP', fmt(d.maxHp),
@@ -641,7 +642,7 @@ function panelVessel(): string {
     ['Attack', fmt(Math.round(d.atk)),
       'Damage per strike, before the enemy’s mitigation. Includes upgrades, class, gear, level and essence.'],
     ['Defense', `${fmt(Math.round(d.def))} (−${mit}% dmg)`,
-      'Reduces incoming damage by def÷(def+35), capped at 80%.'],
+      `Reduces incoming damage by def÷(def+25+6·depth), capped at 80%. The crypt presses harder the deeper you stand — shown for depth ${mitDepth}.`],
     ['Crit', `${Math.round(d.crit)}% ×${d.critDmg}`,
       'Chance to strike for double damage.'],
     ['Speed', `${d.tickRate.toFixed(1)} act/s`,

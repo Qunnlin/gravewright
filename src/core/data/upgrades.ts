@@ -162,6 +162,13 @@ export const ESSENCE_UPGRADES: UpgradeDef[] = [
     effDesc: (l) => (l > 0 ? 'Auto-scrap unlocked (rule at the Satchel)' : 'Locked'),
   },
   {
+    id: 'ravenous', pool: 'essence', name: 'Ravenous Descent',
+    desc: 'The crypt does not bother resisting. Floors whose monsters you overwhelm fivefold collapse unentered — vaults and all — tributing their scraps as you fall. Bosses and Sealed Halls always stand their ground.',
+    base: 4, growth: 1, max: 1, minReaps: 1,
+    eff: (l) => l,
+    effDesc: (l) => (l > 0 ? 'Trivial floors collapse on arrival' : 'Locked'),
+  },
+  {
     id: 'eternal', pool: 'essence', name: 'Eternal Power',
     desc: 'Your hunger outlives every collapse. ×1.8 attack and HP per level.',
     base: 1, growth: 2.0, max: 50,
