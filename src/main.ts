@@ -25,6 +25,11 @@ initUI(game);
 initTooltips();
 initTutorial(game);
 
+// the dev room only exists when explicitly summoned: ?dev=1
+if (new URLSearchParams(location.search).has('dev')) {
+  import('./ui/devroom').then((m) => m.initDevRoom(game));
+}
+
 // after the UI is listening — the offline modal rides the event bus
 if (loaded) {
   game.applyOffline(Date.now() - loaded.lastSeen);

@@ -89,6 +89,9 @@ export class Game {
   /** Human-readable description of the AI's current intent (for the HUD). */
   goal = 'Stirring…';
 
+  /** Dev-room god mode: the vessel takes no damage. Never persisted. */
+  devInvulnerable = false;
+
   private actAcc = 0;
   private autoBuyAcc = 0;
   private rateAcc = 0;
@@ -674,7 +677,7 @@ export class Game {
   private tickStatuses(): boolean {
     const run = this.state.run!;
     for (const st of run.statuses) {
-      if (st.kind === 'poison' || st.kind === 'burn') {
+      if ((st.kind === 'poison' || st.kind === 'burn') && !this.devInvulnerable) {
         run.hp -= st.power;
         bus.emit({
           type: 'float', x: this.heroPos.x, y: this.heroPos.y,
@@ -1247,7 +1250,7 @@ export class Game {
     // volatile champions detonate — the blast can finish the vessel
     if (m.enchants.includes('volatile')) {
       const dist = Math.abs(m.x - this.heroPos.x) + Math.abs(m.y - this.heroPos.y);
-      if (dist <= 1) {
+      if (dist <= 1 && !this.devInvulnerable) {
         const blast = Math.max(1,
           B.monsterAtk(run.depth) * 1.6 * (1 - B.mitigation(this.d.def)));
         run.hp -= blast;
@@ -1513,6 +1516,8 @@ export class Game {
     const s = this.state;
     const run = s.run!;
     const d = this.d;
+
+    if (this.devInvulnerable) return;
 
     // dodge
     if (chance(d.dodge / 100)) {

@@ -121,6 +121,28 @@ describe('equipment locks', () => {
   });
 });
 
+describe('dev god mode', () => {
+  it('an invulnerable vessel shrugs off attacks and dots', () => {
+    seedRng(46);
+    const game = freshGame();
+    const run = game.state.run!;
+    game.devInvulnerable = true;
+
+    run.hp = 5;
+    run.statuses = [{ kind: 'poison', turns: 3, power: 9999999 }];
+    const dirs = [[0, 1], [1, 0], [0, -1], [-1, 0]] as const;
+    const dir = dirs.find(([dx, dy]) =>
+      run.floor.tiles[(game.heroPos.y + dy) * run.floor.w + (game.heroPos.x + dx)] !== TILE.WALL)!;
+    game.manualMove(dir[0], dir[1]);
+    expect(game.state.run).not.toBeNull();
+    expect(game.state.run!.hp).toBe(5);
+
+    game.devInvulnerable = false;
+    game.manualMove(-dir[0], -dir[1]);
+    expect(game.state.run).toBeNull(); // mortality restored
+  });
+});
+
 describe('auto-mend', () => {
   it('re-raises fallen minions from bones when enabled', () => {
     seedRng(45);
