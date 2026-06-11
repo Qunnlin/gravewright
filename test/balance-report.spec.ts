@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 import { Game } from '../src/core/game';
 import { seedRng } from '../src/core/rng';
 import { bus } from '../src/core/events';
+import * as B from '../src/core/balance';
 import {
   BONE_UPGRADES, SOUL_UPGRADES, ESSENCE_UPGRADES, MINIONS, minionLevelCost,
 } from '../src/core/data/upgrades';
@@ -66,6 +67,24 @@ describe('balance report', () => {
     });
     game.state.auto = true; // robots skip the manual-first onboarding
 
+    // difficulty probes: at every descent, how many hits each side needs
+    interface Probe { depth: number; hTTK: number; mTTK: number; wrath: number }
+    const probes: Probe[] = [];
+    bus.on((e) => {
+      if (e.type !== 'descend') return;
+      const d = game.d;
+      const wrath = game.wrath();
+      const heroDmg = Math.max(1, d.atk * (1 - B.mitigation(B.monsterDef(e.depth))));
+      const monDmg = Math.max(1,
+        B.monsterAtk(e.depth) * wrath * (1 - B.heroMitigation(d.def, e.depth)));
+      probes.push({
+        depth: e.depth,
+        hTTK: Math.ceil((B.monsterHp(e.depth) * wrath) / heroDmg),
+        mTTK: Math.ceil(d.maxHp / monDmg),
+        wrath: +wrath.toFixed(2),
+      });
+    });
+
     const reports: CycleReport[] = [];
     const CYCLE_CAP_S = 4 * 3600;
 
@@ -112,6 +131,10 @@ describe('balance report', () => {
         `${String(r.essenceGained).padStart(8)} | ${String(r.avgVesselLifetimeS).padStart(10)} | ${r.soulsPerMin}`,
       );
     }
+    console.log('difficulty probes (last 8 descents): depth | heroTTK | monTTK | wrath');
+    for (const p of probes.slice(-8)) {
+      console.log(`  ${String(p.depth).padStart(5)} | ${String(p.hTTK).padStart(7)} | ${String(p.mTTK).padStart(6)} | ${p.wrath}`);
+    }
     console.log('final upgrades:', JSON.stringify(game.state.upgrades));
     console.log('final class:', game.state.curClass, '| relics:', game.state.relics.length,
       '| champions:', game.state.championsSlain, '| wardens:', game.state.wardensSlain);
@@ -137,17 +160,37 @@ describe('balance report', () => {
     expect(c3.maxDepth).toBeGreaterThanOrEqual(14); // reapDepthRequired(2)
     // soul income accelerates with essence
     expect(c3.soulsPerMin).toBeGreaterThan(c1.soulsPerMin * 1.3);
+    // frontier monsters stay threatening: the late ramp keeps hits-to-kill-
+    // the-hero bounded even against an optimally-shopped vessel
+    const deepestProbes = [...probes].sort((a, b) => b.depth - a.depth).slice(0, 4);
+    for (const p of deepestProbes) expect(p.mTTK).toBeLessThanOrEqual(60);
 
-    // the crypt's teeth: stop shopping entirely and the frontier MUST kill the
-    // vessel within 30 sim-minutes — without income growth, monsters win
+    // wall expedition: grant Ravenous Descent, keep shopping, NEVER reap —
+    // skip-falls past trivial floors while wrath climbs. The crypt must
+    // still stop the vessel: a wall (death) within 45 sim-minutes.
     game.state.auto = true; // doReap cleared the run; keep the robot marching
-    const deathsBefore = game.state.totalDeaths;
-    let extraS = 0;
-    while (extraS < 1800 && game.state.totalDeaths === deathsBefore) {
+    game.state.upgrades['ravenous'] = 1;
+    game.recalc();
+    const wallDeaths = game.state.totalDeaths;
+    let deathDepth = 0;
+    bus.on((e) => {
+      if (e.type === 'death') deathDepth = e.depth;
+    });
+    let wallS = 0;
+    while (wallS < 2700 && game.state.totalDeaths === wallDeaths) {
       game.tick(250);
-      extraS += 0.25;
+      wallS += 0.25;
+      if (Math.round(wallS * 4) % 4 === 0) shop(game);
     }
-    console.log(`no-shop survival after cycle 3: ${(extraS / 60).toFixed(1)} min until death`);
-    expect(game.state.totalDeaths).toBeGreaterThan(deathsBefore);
+    const wallProbe = probes[probes.length - 1];
+    console.log(
+      `wall expedition: fresh post-reap vessel with Ravenous died at depth ` +
+      `${deathDepth} after ${(wallS / 60).toFixed(1)} min ` +
+      `(wrath ×${game.wrath().toFixed(2)}); deepest probe ` +
+      `d${wallProbe.depth} hTTK ${wallProbe.hTTK} / mTTK ${wallProbe.mTTK}`);
+    // the wall exists: an unreaping vessel dies, and dies DEEP — the skip
+    // carries it past the trivial band before the crypt collects
+    expect(game.state.totalDeaths).toBeGreaterThan(wallDeaths);
+    expect(deathDepth).toBeGreaterThanOrEqual(15);
   }, 600_000);
 });

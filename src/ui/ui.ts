@@ -207,6 +207,10 @@ function onClick(ev: MouseEvent): void {
       game.state.settings.autoMend = !game.state.settings.autoMend;
       queueRender();
       break;
+    case 'toggle-ravenous':
+      game.state.settings.ravenousActive = !game.state.settings.ravenousActive;
+      queueRender();
+      break;
     case 'reap':
       if (game.canReap()) {
         showModal(`
@@ -633,7 +637,8 @@ function panelVessel(): string {
   const d = game.d;
   const run = s.run;
   const klass = classById(run?.klass ?? s.curClass);
-  const mit = Math.round(B.mitigation(d.def) * 100);
+  const mitDepth = run?.depth ?? game.d.startDepth;
+  const mit = Math.round(B.heroMitigation(d.def, mitDepth) * 100);
 
   const statRows: [string, string, string][] = [
     ['Max HP', fmt(d.maxHp),
@@ -641,7 +646,7 @@ function panelVessel(): string {
     ['Attack', fmt(Math.round(d.atk)),
       'Damage per strike, before the enemy’s mitigation. Includes upgrades, class, gear, level and essence.'],
     ['Defense', `${fmt(Math.round(d.def))} (−${mit}% dmg)`,
-      'Reduces incoming damage by def÷(def+35), capped at 80%.'],
+      `Reduces incoming damage by def÷(def+25+6·depth), capped at 80%. The crypt presses harder the deeper you stand — shown for depth ${mitDepth}.`],
     ['Crit', `${Math.round(d.crit)}% ×${d.critDmg}`,
       'Chance to strike for double damage.'],
     ['Speed', `${d.tickRate.toFixed(1)} act/s`,
@@ -698,6 +703,11 @@ function panelVessel(): string {
       ${stratBtn('balanced', 'Balanced', 'Explore 72% of each floor, heal below 40% HP')}
       ${stratBtn('reckless', 'Reckless', 'Rush the stairs on sight, heal below 25% HP')}
     </div>
+    ${(s.upgrades['ravenous'] ?? 0) > 0 ? `
+    <div class="satchel-bar">
+      <button class="btn tiny toggle ${s.settings.ravenousActive ? 'on' : ''}" data-act="toggle-ravenous"
+        data-tip="Ravenous Descent: floors you overwhelm collapse unentered, tributing scraps. Toggle OFF to walk every floor for full loot, XP and souls.">ravenous descent ${s.settings.ravenousActive ? 'ON' : 'OFF'}</button>
+    </div>` : ''}
 
     <h3>Gear</h3>
     ${gearLine('weapon', gear.weapon)}

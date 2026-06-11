@@ -10,12 +10,23 @@
 
 /** ---- monster curves ---- */
 
+/** Past the midgame the crypt compounds harder. Measured fix for "the game
+ *  gets very easy": optimally-shopped income out-grows the base curves, so
+ *  the frontier (depth ~16+) was one-shot territory with harmless monsters
+ *  (probes: heroTTK 1, monTTK 30–100). The ramp bends both curves upward
+ *  past LATE_RAMP_START without touching the well-paced early game. */
+export const LATE_RAMP_START = 12;
+
+function lateRamp(depth: number, rate: number): number {
+  return Math.pow(rate, Math.max(0, depth - LATE_RAMP_START));
+}
+
 export function monsterHp(depth: number): number {
-  return 9 * Math.pow(1.23, depth - 1);
+  return 9 * Math.pow(1.23, depth - 1) * lateRamp(depth, 1.08);
 }
 
 export function monsterAtk(depth: number): number {
-  return 3.2 * Math.pow(1.19, depth - 1);
+  return 3.2 * Math.pow(1.19, depth - 1) * lateRamp(depth, 1.05);
 }
 
 export function monsterDef(depth: number): number {
@@ -60,10 +71,24 @@ export function xpForLevel(level: number): number {
 /** Per-run level bonus: compounding on atk & hp. */
 export const LEVEL_STAT_MULT = 1.09;
 
-/** Damage mitigation from defense: smooth, capped at 80%. */
+/** Damage mitigation from defense: smooth, capped at 80%.
+ *  Used for MONSTER defense (their def values already scale with depth). */
 export function mitigation(def: number): number {
   return Math.min(0.8, def / (def + 35));
 }
+
+/** HERO mitigation: the pivot scales with depth so defense is a treadmill,
+ *  not a one-time 80% checkbox (the old fixed-35 pivot capped out by ~depth 8
+ *  and made every further DEF purchase feel useless — playtest finding). */
+export function heroMitigation(def: number, depth: number): number {
+  return Math.min(0.8, def / (def + 25 + 6 * depth));
+}
+
+/** Ravenous Descent: floors collapse when the vessel out-damages their
+ *  monsters' (wrath-scaled) health by this factor. Tuned so the fall ends
+ *  roughly where fights stop being one-shots (~2.5× raw ≈ TTK 2 after
+ *  monster mitigation). */
+export const RAVENOUS_OVERKILL = 2.5;
 
 /** Damage variance band: rolls multiply attack by [1-V, 1+V]. */
 export const DMG_VARIANCE = 0.15;

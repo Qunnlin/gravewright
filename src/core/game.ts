@@ -77,7 +77,7 @@ export function defaultState(): GameState {
     settings: {
       sound: true, autoBuyBones: true, particles: true,
       autoEquip: true, autoSalvageBelow: 0, protectRarity: 4,
-      buyAmount: 1, autoMend: false,
+      buyAmount: 1, autoMend: false, ravenousActive: true,
     },
   };
 }
@@ -420,7 +420,55 @@ export class Game {
     return want;
   }
 
+  /** A floor "cannot resist" when the vessel out-damages its wrath-scaled
+   *  monsters by RAVENOUS_OVERKILL — Ravenous Descent collapses it. */
+  private overpowered(depth: number): boolean {
+    const run = this.state.run;
+    if (!run) return false;
+    const mods = this.genMods(run.curseIds);
+    return this.d.atk >= B.RAVENOUS_OVERKILL * B.monsterHp(depth) * mods.monsterHpMult;
+  }
+
   descend(): void {
+    const s = this.state;
+    const run = s.run;
+    if (!run) return;
+
+    // Ravenous Descent: depths that cannot resist are skipped before they are
+    // even generated (vaults fall with them); bosses and Sealed Halls always
+    // stand their ground. Never skips while a trial rages.
+    if (this.lvl('ravenous') > 0 && this.state.settings.ravenousActive && !run.trialActive) {
+      let skipped = 0;
+      let goldScraps = 0;
+      let boneScraps = 0;
+      let guard = 0;
+      while (guard++ < 40) {
+        const next = run.depth + 1;
+        if (next % 5 === 0) break; // bosses stand their ground
+        if (s.trialPending) break; // a sealed hall waits below
+        if (s.trialsSeen === 0 && next >= B.TRIAL_GUARANTEE_DEPTH) break;
+        if (!this.overpowered(next)) break;
+        // a hall may reveal itself mid-fall — the chain stops above it
+        if (next >= B.TRIAL_MIN_DEPTH && chance(B.TRIAL_CHANCE)) {
+          s.trialPending = true;
+          break;
+        }
+        run.depth = next;
+        skipped++;
+        goldScraps += B.goldPile(next) * 3;
+        boneScraps += B.bonePile(next) * 2 + B.boneDrop(next, 1) * 4;
+      }
+      if (skipped > 0) {
+        const gold = this.gainGold(goldScraps);
+        const bones = this.gainBones(boneScraps);
+        log(`≫ ${skipped} depth${skipped === 1 ? '' : 's'} offer${skipped === 1 ? 's' : ''} no resistance. Their scraps are tributed (+${fmt(gold)} gold, +${fmt(bones)} bones).`, 'descend');
+      }
+    }
+
+    this.descendOnce();
+  }
+
+  private descendOnce(): void {
     const s = this.state;
     const run = s.run;
     if (!run) return;
@@ -1252,7 +1300,7 @@ export class Game {
       const dist = Math.abs(m.x - this.heroPos.x) + Math.abs(m.y - this.heroPos.y);
       if (dist <= 1 && !this.devInvulnerable) {
         const blast = Math.max(1,
-          B.monsterAtk(run.depth) * 1.6 * (1 - B.mitigation(this.d.def)));
+          B.monsterAtk(run.depth) * 1.6 * (1 - B.heroMitigation(this.d.def, run.depth)));
         run.hp -= blast;
         bus.emit({ type: 'shake', power: 5 });
         bus.emit({ type: 'sound', name: 'hurt' });
@@ -1540,7 +1588,7 @@ export class Game {
     let raw = m.atk * rndf(1 - B.DMG_VARIANCE, 1 + B.DMG_VARIANCE);
     if (m.specials.includes('deadly') && chance(0.2)) raw *= 2;
 
-    let dmg = Math.max(1, raw * (1 - B.mitigation(d.def)));
+    let dmg = Math.max(1, raw * (1 - B.heroMitigation(d.def, run.depth)));
     dmg *= 1 - d.blockPct / 100;
     dmg = Math.max(1, dmg);
 
