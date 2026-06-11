@@ -207,6 +207,10 @@ function onClick(ev: MouseEvent): void {
       game.state.settings.autoMend = !game.state.settings.autoMend;
       queueRender();
       break;
+    case 'toggle-protectvestige':
+      game.state.settings.protectVestiges = !game.state.settings.protectVestiges;
+      queueRender();
+      break;
     case 'reap':
       if (game.canReap()) {
         showModal(`
@@ -618,6 +622,8 @@ function satchelSection(): string {
     <div class="satchel-bar">
       <button class="btn tiny toggle ${s.settings.autoEquip ? 'on' : ''}" data-act="toggle-autoequip"
         data-tip="When on, looted items the vessel can wield are equipped automatically when clearly better (+5%).">auto-equip ${s.settings.autoEquip ? 'ON' : 'OFF'}</button>
+      ${game.qolUnlocked('tithe') ? `<button class="btn tiny ${s.settings.protectVestiges ? 'toggle on' : ''}" data-act="toggle-protectvestige"
+        data-tip="Vestiges (rainbow set pieces) are exempt from every automatic scrap — overflow, auto-scrap and salvage-all — regardless of the protect tier. Manual scrapping still works.">vestiges ${s.settings.protectVestiges ? 'SAFE' : 'BURNABLE'}</button>` : ''}
       ${game.qolUnlocked('tithe') ? `<button class="btn tiny ${s.settings.autoSalvageBelow > 0 ? 'toggle on' : ''}" data-act="cycle-autosalvage"
         data-tip="Unequipped loot below this rarity is scrapped on pickup instead of cluttering the satchel. Protected rarities are always safe. Set to 'everything' (with protect: nothing) and the satchel stays empty.">auto-scrap: ${SALVAGE_MODES[s.settings.autoSalvageBelow]}</button>` : ''}
       <button class="btn tiny" data-act="cycle-protect"
@@ -890,6 +896,10 @@ function panelSettings(): string {
     ${game.qolUnlocked('tithe') ? `<div class="setting-row" data-tip="Unequipped loot below this rarity is scrapped on pickup. Protected rarities are always safe.">
       <span>Auto-scrap loot below</span>
       <button class="btn" data-act="cycle-autosalvage">${SALVAGE_MODES[s.settings.autoSalvageBelow]}</button>
+    </div>
+    <div class="setting-row" data-tip="Vestiges are exempt from every automatic scrap, regardless of the protect tier.">
+      <span>Protect vestiges</span>
+      <button class="btn toggle ${s.settings.protectVestiges ? 'on' : ''}" data-act="toggle-protectvestige">${s.settings.protectVestiges ? 'ON' : 'OFF'}</button>
     </div>` : ''}
     <div class="setting-row" data-tip="Items at or above this rarity are never auto-scrapped — not by overflow, not by auto-scrap, not by salvage-all.">
       <span>Protect rarity</span>
