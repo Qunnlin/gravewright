@@ -172,6 +172,8 @@ export interface Settings {
   buyAmount: number;
   /** automatically re-raise fallen minions with bones */
   autoMend: boolean;
+  /** Ravenous Descent active (the upgrade can be toggled off to farm floors) */
+  ravenousActive: boolean;
 }
 
 export interface GameState {

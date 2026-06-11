@@ -77,7 +77,7 @@ export function defaultState(): GameState {
     settings: {
       sound: true, autoBuyBones: true, particles: true,
       autoEquip: true, autoSalvageBelow: 0, protectRarity: 4,
-      buyAmount: 1, autoMend: false,
+      buyAmount: 1, autoMend: false, ravenousActive: true,
     },
   };
 }
@@ -434,7 +434,7 @@ export class Game {
     // Ravenous Descent: depths that cannot resist are skipped before they are
     // even generated (vaults fall with them); bosses and Sealed Halls always
     // stand their ground. Never skips while a trial rages.
-    if (this.lvl('ravenous') > 0 && !run.trialActive) {
+    if (this.lvl('ravenous') > 0 && this.state.settings.ravenousActive && !run.trialActive) {
       let skipped = 0;
       let goldScraps = 0;
       let boneScraps = 0;

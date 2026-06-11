@@ -207,6 +207,10 @@ function onClick(ev: MouseEvent): void {
       game.state.settings.autoMend = !game.state.settings.autoMend;
       queueRender();
       break;
+    case 'toggle-ravenous':
+      game.state.settings.ravenousActive = !game.state.settings.ravenousActive;
+      queueRender();
+      break;
     case 'reap':
       if (game.canReap()) {
         showModal(`
@@ -633,7 +637,7 @@ function panelVessel(): string {
   const d = game.d;
   const run = s.run;
   const klass = classById(run?.klass ?? s.curClass);
-  const mitDepth = run?.depth ?? 1;
+  const mitDepth = run?.depth ?? game.d.startDepth;
   const mit = Math.round(B.heroMitigation(d.def, mitDepth) * 100);
 
   const statRows: [string, string, string][] = [
@@ -699,6 +703,11 @@ function panelVessel(): string {
       ${stratBtn('balanced', 'Balanced', 'Explore 72% of each floor, heal below 40% HP')}
       ${stratBtn('reckless', 'Reckless', 'Rush the stairs on sight, heal below 25% HP')}
     </div>
+    ${(s.upgrades['ravenous'] ?? 0) > 0 ? `
+    <div class="satchel-bar">
+      <button class="btn tiny toggle ${s.settings.ravenousActive ? 'on' : ''}" data-act="toggle-ravenous"
+        data-tip="Ravenous Descent: floors you overwhelm collapse unentered, tributing scraps. Toggle OFF to walk every floor for full loot, XP and souls.">ravenous descent ${s.settings.ravenousActive ? 'ON' : 'OFF'}</button>
+    </div>` : ''}
 
     <h3>Gear</h3>
     ${gearLine('weapon', gear.weapon)}
