@@ -67,6 +67,18 @@ describe('ravenous descent', () => {
     expect(game.state.bestDepth).toBe(5);
   });
 
+  it('the toggle disarms it: ravenous OFF walks every floor', () => {
+    seedRng(54);
+    const game = overpoweredGame();
+    game.state.upgrades['ravenous'] = 1;
+    game.state.settings.ravenousActive = false;
+    game.descend();
+    expect(game.state.run!.depth).toBe(2); // no skipping while disarmed
+    game.state.settings.ravenousActive = true;
+    game.descend();
+    expect(game.state.run!.depth).toBe(5); // re-armed: falls to the boss
+  });
+
   it('stops where the crypt resists: weak vessels fall one floor', () => {
     seedRng(53);
     bus.clear();

@@ -174,6 +174,8 @@ export interface Settings {
   autoMend: boolean;
   /** Vestiges (set pieces) are exempt from every automatic scrap */
   protectVestiges: boolean;
+  /** Ravenous Descent active (the upgrade can be toggled off to farm floors) */
+  ravenousActive: boolean;
 }
 
 export interface GameState {

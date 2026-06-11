@@ -138,6 +138,7 @@ function mergeState(loaded: Partial<GameState>): GameState {
   if (![3, 4, 5, 7].includes(st.protectRarity)) st.protectRarity = 4;
   if (![0, 1, 10].includes(st.buyAmount)) st.buyAmount = 1;
   st.protectVestiges = st.protectVestiges !== false;
+  st.ravenousActive = st.ravenousActive !== false;
 
   merged.trialPending = merged.trialPending === true;
 

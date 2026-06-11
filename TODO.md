@@ -29,15 +29,15 @@ how-tos and `CLAUDE.md` for the contribution rules.
 - [x] Souls-on-death indicator moved onto the souls plaque as a small `+N`
   (PR #2).
 - [x] Pending reap gain shown as a small `+N` on the essence plaque (PR #2).
-- [x] Protect-vestiges setting (PR #6): set pieces exempt from every automatic
+- [x] Protect-vestiges setting (PR #5): set pieces exempt from every automatic
   scrap, toggleable once the Scrap-Tithe is owned; default ON.
 
-- [x] Defense rework (PR #5): hero mitigation pivot now scales with depth
+- [x] Defense rework (PR #4): hero mitigation pivot now scales with depth
   (`def÷(def+25+6·depth)`) — DEF is a treadmill, not a one-time 80% checkbox.
-- [x] Depth-skip (PR #5): **Ravenous Descent** essence upgrade — floors you
+- [x] Depth-skip (PR #4): **Ravenous Descent** essence upgrade — floors you
   overwhelm 2.5× collapse unentered (vaults included), tributing scraps;
   bosses and Sealed Halls always hold.
-- [x] Big-rebalance part 1 (PR #5): late-depth ramp (HP ×1.08^(d−12),
+- [x] Big-rebalance part 1 (PR #4): late-depth ramp (HP ×1.08^(d−12),
   ATK ×1.05^(d−12)) + difficulty probes & wall-expedition instrumentation in
   the balance report. Measured: cycle-1 deaths 2→6, frontier monster threat
   100→≈25 hits, no-shop survival 20→10 min, post-reap wall at ~depth 20.
@@ -53,7 +53,7 @@ how-tos and `CLAUDE.md` for the contribution rules.
 
 ## Gameplay & balance
 
-- [ ] **(P1, L) THE BIG REBALANCE — part 2 (part 1 shipped in PR #5).**
+- [ ] **(P1, L) THE BIG REBALANCE — part 2 (part 1 shipped in PR #4).**
   Remaining: validate against real human playtests; the asymptotic race
   (optimal income growth vs monster curves) still allows one-shot bands
   mid-cycle — intended power fantasy now that Ravenous swallows them, but
