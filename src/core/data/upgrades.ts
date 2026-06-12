@@ -44,10 +44,12 @@ export const BONE_UPGRADES: UpgradeDef[] = [
   },
   {
     id: 'bulwark', pool: 'bones', name: 'Ossified Hide',
-    desc: 'Layered bone plating. +2 defense per level (compounding +10%).',
+    // halved 2026-06-12 (playtest: "defense seems super strong, I don't even
+    // die in the early game" — cheap bones bought ×14 wards at depth 2)
+    desc: 'Layered bone plating. +1 defense per level (compounding +10%).',
     base: 16, growth: 1.21, max: Infinity,
-    eff: (l) => (l === 0 ? 0 : 2 * l * Math.pow(1.1, l)),
-    effDesc: (l) => `DEF +${Math.round(l === 0 ? 0 : 2 * l * Math.pow(1.1, l))}`,
+    eff: (l) => (l === 0 ? 0 : l * Math.pow(1.1, l)),
+    effDesc: (l) => `DEF +${Math.round(l === 0 ? 0 : l * Math.pow(1.1, l))}`,
   },
   {
     id: 'fortune', pool: 'bones', name: 'Tomb Fortune',

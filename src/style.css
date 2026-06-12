@@ -339,12 +339,14 @@ main {
   background: linear-gradient(90deg, #6e1226, #c43050 70%, #e0556f);
   transition: width 0.15s;
 }
-/* what the armor adds to the pool: a steel stretch after the flesh */
-.bar .fill.armor {
+/* the Ward: pale grave-light the armor weaves after the flesh —
+   luminous, not metallic; the dark below thins it */
+.bar .fill.ward {
   position: absolute;
   top: 0;
   left: 0;
-  background: linear-gradient(90deg, #4a5668, #717f95);
+  background: linear-gradient(90deg, #7d92c4, #c8d8f5 60%, #e8f1ff);
+  box-shadow: 0 0 8px rgba(200, 216, 245, 0.45);
   transition: width 0.15s, left 0.15s;
 }
 /* segment ticks over the hp bar */
