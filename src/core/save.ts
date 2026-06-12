@@ -140,6 +140,9 @@ function mergeState(loaded: Partial<GameState>): GameState {
   st.protectVestiges = st.protectVestiges !== false;
   st.ravenousActive = st.ravenousActive !== false;
   st.crtFilter = st.crtFilter === true; // default-off vanity, strict coercion
+  st.logCombat = st.logCombat !== false;
+  st.logLoot = st.logLoot !== false;
+  st.logSystem = st.logSystem !== false;
 
   merged.trialPending = merged.trialPending === true;
 

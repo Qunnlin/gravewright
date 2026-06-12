@@ -195,6 +195,10 @@ export interface Settings {
   ravenousActive: boolean;
   /** CRT/arcade display filter: scanlines, phosphor, vignette, fringing */
   crtFilter: boolean;
+  /** log filter toggles: which categories of lines are shown */
+  logCombat: boolean;
+  logLoot: boolean;
+  logSystem: boolean;
 }
 
 export interface GameState {

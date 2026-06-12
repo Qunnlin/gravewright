@@ -52,6 +52,7 @@ export function initUI(g: Game): void {
   document.body.addEventListener('click', onClick);
   bus.on(onEvent);
   applyCrtFilter();
+  applyLogFilters();
 
   renderPanel();
   setInterval(() => renderPanel(), 1000);
@@ -312,6 +313,12 @@ function onClick(ev: MouseEvent): void {
       applyCrtFilter();
       queueRender();
       break;
+    case 'log-filter': {
+      const key = ('log' + id[0].toUpperCase() + id.slice(1)) as 'logCombat' | 'logLoot' | 'logSystem';
+      game.state.settings[key] = !game.state.settings[key];
+      applyLogFilters();
+      break;
+    }
     case 'save-now':
       saveGame(game);
       addLog('Progress committed to the ledger.', 'system');
@@ -482,11 +489,54 @@ export function uiFrame(): void {
 
 const logEl = () => $('log');
 
-function addLog(msg: string, cls?: string): void {
-  const div = document.createElement('div');
-  div.className = `log-line ${cls ? 'log-' + cls : ''}`;
-  div.textContent = msg;
+/** Which filter bucket a log class belongs to. Lifecycle anchors (summon,
+ *  descend — the depth markers) are deliberately absent: always shown. */
+const LOG_CATS: Record<string, 'combat' | 'loot' | 'system'> = {
+  death: 'combat', boss: 'combat', elite: 'combat', champion: 'combat',
+  monster: 'combat', levelup: 'combat', minion: 'combat',
+  gold: 'loot', bones: 'loot', souls: 'loot', relic: 'loot', item: 'loot',
+  shrine: 'loot', rarity0: 'loot', rarity1: 'loot', rarity2: 'loot',
+  rarity3: 'loot', rarity4: 'loot', rarity5: 'loot', rarity6: 'loot',
+  system: 'system', mystic: 'system', class: 'system', reap: 'system',
+  achievement: 'system',
+};
+
+/** Reflect the three settings toggles as classes on #log (CSS does the
+ *  filtering, so old lines filter retroactively) and on the bar chips. */
+function applyLogFilters(): void {
+  const st = game.state.settings;
   const el = logEl();
+  el.classList.toggle('hide-combat', !st.logCombat);
+  el.classList.toggle('hide-loot', !st.logLoot);
+  el.classList.toggle('hide-system', !st.logSystem);
+  for (const [id, on] of [['combat', st.logCombat], ['loot', st.logLoot], ['system', st.logSystem]] as const) {
+    document.querySelector(`[data-act="log-filter"][data-id="${id}"]`)
+      ?.classList.toggle('on', on);
+  }
+}
+
+function addLog(msg: string, cls?: string): void {
+  const el = logEl();
+
+  // consecutive repeats collapse into the latest line's ×N badge
+  const first = el.firstElementChild as HTMLElement | null;
+  if (first && first.dataset.msg === msg && first.dataset.cls === (cls ?? '')) {
+    const n = Number(first.dataset.count ?? '1') + 1;
+    first.dataset.count = String(n);
+    (first.querySelector('.log-x') as HTMLElement).textContent = `×${n}`;
+    return;
+  }
+
+  const div = document.createElement('div');
+  const cat = cls ? LOG_CATS[cls] : 'system';
+  div.className = `log-line ${cls ? 'log-' + cls : ''} ${cat ? 'log-cat-' + cat : ''}`;
+  div.textContent = msg;
+  div.dataset.msg = msg;
+  div.dataset.cls = cls ?? '';
+  div.dataset.count = '1';
+  const badge = document.createElement('span');
+  badge.className = 'log-x';
+  div.appendChild(badge);
   el.prepend(div);
   while (el.children.length > 120) el.removeChild(el.lastChild!);
 }
