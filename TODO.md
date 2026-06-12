@@ -29,15 +29,15 @@ into the next version's notes.
 
 ## Gameplay & balance
 
-- [ ] **(P1, M, needs a human) THE v1.1 FEEL-PASS** — the robot validated
-  curve *shape* across the defense/lethality/bone-scaling arc (race
-  exponents now "in step", wall d18–20, frontier never one-shot); only play
-  can validate *feel*. One evening on a real save, checking: does the Ward
-  read right (sheen/shards, no numbers)? early-game deaths? does buying
-  ferocity still feel rewarding at cost 1.28? bone income at reaps 5+
-  (Grand Ossuary ×1.5^l is unmeasurable by the 3-cycle robot — trim to
-  ×1.35 if bones firehose)? mid-cycle one-shot bands (intended fantasy —
-  still fun?). *Each finding is a one-constant patch release.*
+- [x] ~~THE v1.1 FEEL-PASS~~ — **verdict (2026-06-12): "feels great, the
+  defense rework was amazing."** The Ward + eHP system and the lethality
+  tuning are human-validated. Still open from the original list (folded
+  into the items below): bone income at reaps 5+ (needs a deep save) and
+  the deep-era field trip.
+- [ ] **(P2, M, needs a deep save) Bone income at reaps 5+** — Grand
+  Ossuary (×1.5^l, max 30) is unmeasurable by the 3-cycle robot; check
+  minutes-to-next-level stays sane deep into prestige, trim to ×1.35 if
+  bones firehose.
 - [ ] **(P2, S, validation) Deep-era field trip** — nobody has organically
   visited the Drowned Archive (50+) or Ossuary City (100+); play a deep
   Deep-Memory save and check palettes/natives/loot feel + era thresholds.
