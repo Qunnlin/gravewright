@@ -174,7 +174,7 @@ function tileTip(floor: Floor, t: number, vis: boolean): string | null {
     case TILE.SHRINE: {
       if (floor.shrine?.used) return `<span class='tip-name' style='color:#4a4658'>☩ A spent shrine</span><br><span class='tip-sub'>cold and grey; it has nothing left to give</span>` + fog;
       const cost = game.d.shrinesFree ? 'free for this vessel' : `⛁ ${fmt(B.shrineCost(floor.depth))} gold`;
-      return `<span class='tip-name' style='color:#ffee88'>☩ Shrine</span><br><span class='tip-sub'>full heal + 25 turns of +25% damage — ${cost}</span>` + fog;
+      return `<span class='tip-name' style='color:#ffee88'>☩ Shrine</span><br><span class='tip-sub'>full heal + ${B.BLESS_TURNS} turns of +25% damage — ${cost}</span>` + fog;
     }
     case TILE.WELL:
       return floor.well?.used

@@ -1059,20 +1059,9 @@ function panelSettings(): string {
     ${toggle('Damage numbers', s.settings.particles, 'toggle-particles')}
     ${toggle('CRT filter', s.settings.crtFilter, 'toggle-crt',
       'Phosphor and curved glass: heavy scanlines, glow, vignette and a whisper of color fringing. Pure vanity.')}
-    ${toggle('Auto-equip loot', s.settings.autoEquip, 'toggle-autoequip',
-      'When on, looted items the vessel can wield are equipped automatically when clearly better (+5%).')}
-    ${game.qolUnlocked('tithe') ? `<div class="setting-row" data-tip="Unequipped loot below this rarity is scrapped on pickup. Protected rarities are always safe.">
-      <span>Auto-scrap loot below</span>
-      <button class="btn" data-act="cycle-autosalvage">${SALVAGE_MODES[s.settings.autoSalvageBelow]}</button>
-    </div>
-    <div class="setting-row" data-tip="Vestiges are exempt from every automatic scrap, regardless of the protect tier.">
-      <span>Protect vestiges</span>
-      <button class="btn toggle ${s.settings.protectVestiges ? 'on' : ''}" data-act="toggle-protectvestige">${s.settings.protectVestiges ? 'ON' : 'OFF'}</button>
-    </div>` : ''}
-    <div class="setting-row" data-tip="Items at or above this rarity are never auto-scrapped — not by overflow, not by auto-scrap, not by salvage-all.">
-      <span>Protect rarity</span>
-      <button class="btn" data-act="cycle-protect">${PROTECT_MODES[s.settings.protectRarity]}</button>
-    </div>
+    <div class="hint">Loot automation (auto-equip, auto-scrap, protect tiers,
+      vestige safety) lives where the loot does — the Satchel bar on the
+      Vessel tab.</div>
     <div class="setting-row" data-tip="Forget every dismissed whisper; the contextual tutorial plays again as each mechanic comes up.">
       <span>Tutorial whispers</span>
       <button class="btn" data-act="tutorial-reset">Replay tutorial</button>
