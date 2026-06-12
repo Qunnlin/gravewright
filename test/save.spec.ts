@@ -121,6 +121,18 @@ describe('save round-trip', () => {
     expect(decodeSave(btoa(JSON.stringify(disabled))).settings.crtFilter).toBe(false);
   });
 
+  it('sanitizes the codex: unknown keys and junk counts are dropped', () => {
+    const raw = {
+      v: 1,
+      codex: {
+        'mon:rat': 7.9, 'mon:fake': 3, 'hack': 1,
+        'ench:gilded': -2, 'bio:server': '9', 'curse:iron': 2,
+      },
+    };
+    const d = decodeSave(btoa(JSON.stringify(raw)));
+    expect(d.codex).toEqual({ 'mon:rat': 7, 'curse:iron': 2 });
+  });
+
   it('sanitizes relicsSeen: dedupes, drops unknown ids, backfills held relics', () => {
     const raw = {
       v: 1,

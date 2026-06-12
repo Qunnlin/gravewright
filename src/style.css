@@ -904,6 +904,38 @@ main {
 .feat.done .feat-name::before { content: '★ '; }
 .feat-desc { font-size: 10px; color: var(--muted); }
 
+/* ---------- codex ---------- */
+
+.codex-row {
+  display: flex;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 6px 10px;
+  margin-bottom: 5px;
+}
+.codex-row.codex-locked { opacity: 0.4; }
+.codex-glyph {
+  font-size: 16px;
+  font-weight: 700;
+  width: 20px;
+  text-align: center;
+  text-shadow: 0 0 8px currentColor;
+  flex-shrink: 0;
+}
+.codex-body { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.codex-name { font-weight: 700; font-size: 12px; color: #eae6f8; }
+.codex-count { color: var(--muted); font-weight: 400; margin-left: 3px; }
+.codex-flavor {
+  font-family: var(--font-flavor);
+  font-style: italic;
+  color: var(--ink);
+  font-size: 12.5px;
+}
+.codex-stats { color: var(--accent2); font-size: 10.5px; }
+.codex-more { color: var(--muted); font-style: italic; }
+
 /* ---------- settings ---------- */
 
 .setting-row {

@@ -159,6 +159,7 @@ function handle(act: string, id: string): void {
         run.biomeId = id as RunState['biomeId'];
         run.biomeFloorsLeft = 3;
         run.biomeCooldown = 0;
+        s.codex['bio:' + id] = (s.codex['bio:' + id] ?? 0) + 1; // the codex counts the forced visit
         log(`⚙ Biome forced: ${id} — this floor recolored, the next 3 are the full biome.`, 'system');
       }
       break;

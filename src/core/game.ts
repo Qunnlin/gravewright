@@ -74,6 +74,7 @@ export function defaultState(): GameState {
     // the crypt has tasted a death (or depth 10); see autoUnlocked()
     auto: false,
     tutorial: {},
+    codex: {},
     rates: { souls: 0, bones: 0 },
     lastSeen: Date.now(),
     settings: {
@@ -421,6 +422,7 @@ export class Game {
     log(`☥ ${run.heroName} shuffles into the crypt (depth ${depth}).`, 'summon');
     if (floor.biome) {
       log(biomeById(floor.biome)!.enterOmen, 'mystic');
+      this.bumpCodex('bio:' + floor.biome);
     }
     if (floor.isBossFloor) {
       const boss = floor.monsters.find((m) => m.boss);
@@ -585,7 +587,10 @@ export class Game {
     // band crossing is judged against the last GENERATED floor, so a
     // Ravenous fall across a boundary still gets its omen
     const prevBand = Game.bandOf(run.floor.depth);
-    const prevBiome = run.floor.biome;
+    // the Sealed Hall floor carries no biome field while the streak state
+    // lives on; falling back to biomeId keeps a trial-interrupted streak
+    // from re-counting (and re-announcing) the same visit
+    const prevBiome = run.floor.biome ?? run.biomeId ?? undefined;
     const prevDepth = run.floor.depth;
 
     run.depth++;
@@ -620,7 +625,10 @@ export class Game {
     }
     if (run.floor.biome !== prevBiome) {
       if (prevBiome) log(biomeById(prevBiome)!.exitOmen, 'mystic');
-      if (run.floor.biome) log(biomeById(run.floor.biome)!.enterOmen, 'mystic');
+      if (run.floor.biome) {
+        log(biomeById(run.floor.biome)!.enterOmen, 'mystic');
+        this.bumpCodex('bio:' + run.floor.biome);
+      }
     }
     // the riddle of the Sealed Hall, murmured rarely
     if (run.depth >= 10 && chance(0.03)) {
@@ -1290,6 +1298,7 @@ export class Game {
   acquireItem(item: Item): void {
     const run = this.state.run;
     const s = this.state.settings;
+    if (item.setId) this.bumpCodex('set:' + item.setId);
     const klass = run?.klass ?? this.state.curClass;
     const cur = run?.gear[item.slot];
     const wantsEquip =
@@ -1512,6 +1521,11 @@ export class Game {
     if (m.hp <= 0) this.killMonster(m);
   }
 
+  /** The codex remembers: counters drive the wiki's unlock tiers. */
+  private bumpCodex(key: string): void {
+    this.state.codex[key] = (this.state.codex[key] ?? 0) + 1;
+  }
+
   private killMonster(m: Monster): void {
     const s = this.state;
     const run = s.run!;
@@ -1520,6 +1534,8 @@ export class Game {
     floor.monsters = floor.monsters.filter((mm) => mm !== m);
     run.kills++;
     s.totalKills++;
+    this.bumpCodex('mon:' + m.key);
+    for (const e of m.enchants) this.bumpCodex('ench:' + e);
 
     // volatile champions detonate — the blast can finish the vessel
     if (m.enchants.includes('volatile')) {
@@ -2253,6 +2269,7 @@ export class Game {
     if (this.lvl('rites') === 0) return;
     if (!curseById(id)) return;
     this.state.curses[id] = !this.state.curses[id];
+    if (this.state.curses[id]) this.bumpCodex('curse:' + id);
     bus.emit({ type: 'dirty' });
   }
 

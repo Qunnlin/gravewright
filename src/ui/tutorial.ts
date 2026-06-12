@@ -14,6 +14,14 @@ interface Step {
 
 const STEPS: Step[] = [
   {
+    id: 'codex',
+    when: (g) => g.state.totalKills >= 15,
+    title: 'The Codex Remembers',
+    body: `Every slain thing is written down. The <b>Codex</b> tab keeps your
+      bestiary, your relics, your sworn pacts — and slaying more of a kind
+      teaches you its nature.`,
+  },
+  {
     id: 'firstdeath',
     when: (g) => g.state.totalDeaths >= 1,
     title: 'Death Is the Business Model',

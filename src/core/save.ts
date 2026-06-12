@@ -6,6 +6,9 @@ import { curseById } from './data/curses';
 import { CLASSES } from './data/classes';
 import { WEAPON_KINDS } from './data/items';
 import { setById } from './data/sets';
+import { monsterDefByKey } from './data/monsters';
+import { enchantById } from './data/enchants';
+import { biomeById } from './data/biomes';
 import { INVENTORY_CAP } from './balance';
 
 export const SAVE_KEY = 'gravewright-save-v1';
@@ -135,6 +138,25 @@ function mergeState(loaded: Partial<GameState>): GameState {
   // --- tutorial: only true flags survive ---
   merged.tutorial = Object.fromEntries(
     Object.entries(loaded.tutorial ?? {}).filter(([, v]) => v === true));
+
+  // --- codex: only keys that map to real data-table entries survive ---
+  const codexValid = (key: string): boolean => {
+    const i = key.indexOf(':');
+    if (i < 0) return false;
+    const id = key.slice(i + 1);
+    switch (key.slice(0, i)) {
+      case 'mon': return monsterDefByKey(id) !== undefined;
+      case 'ench': return enchantById(id) !== undefined;
+      case 'set': return setById(id) !== undefined;
+      case 'bio': return biomeById(id) !== undefined;
+      case 'curse': return curseById(id) !== undefined;
+      default: return false;
+    }
+  };
+  merged.codex = Object.fromEntries(
+    Object.entries(loaded.codex ?? {})
+      .filter(([k, v]) => codexValid(k) && num(v) && v > 0)
+      .map(([k, v]) => [k, Math.min(1e9, Math.floor(v as number))]));
 
   // --- settings: clamp the numeric knobs ---
   const st = merged.settings;
