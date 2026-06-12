@@ -14,6 +14,7 @@ import { bus } from '../src/core/events';
 import * as B from '../src/core/balance';
 import {
   BONE_UPGRADES, SOUL_UPGRADES, ESSENCE_UPGRADES, MINIONS, minionLevelCost,
+  upgradeById,
 } from '../src/core/data/upgrades';
 import { CLASSES } from '../src/core/data/classes';
 
@@ -88,18 +89,47 @@ describe('balance report', () => {
     const reports: CycleReport[] = [];
     const CYCLE_CAP_S = 4 * 3600;
 
+    // power-growth audit: snapshots every ~2 sim-minutes feed the race-
+    // exponent computation (does hero power out-grow the frontier curve?)
+    interface Audit {
+      cycle: number; min: number; atk: number; maxHp: number; def: number;
+      vig: number; fer: number; bonesPerMin: number;
+      minsToFer: number; minsToVig: number; frontier: number;
+    }
+    const audits: Audit[] = [];
+    const ferDef = upgradeById('ferocity')!;
+    const vigDef = upgradeById('vigor')!;
+    const snapshot = (cycle: number, min: number): void => {
+      const rate = Math.max(1, game.state.rates.bones);
+      audits.push({
+        cycle, min: +min.toFixed(1),
+        atk: Math.round(game.d.atk), maxHp: game.d.maxHp, def: Math.round(game.d.def),
+        vig: game.state.upgrades['vigor'] ?? 0, fer: game.state.upgrades['ferocity'] ?? 0,
+        bonesPerMin: Math.round(game.state.rates.bones),
+        minsToFer: +(game.cost(ferDef) / rate).toFixed(1),
+        minsToVig: +(game.cost(vigDef) / rate).toFixed(1),
+        frontier: game.state.bestDepthThisReap,
+      });
+    };
+
     for (let cycle = 1; cycle <= 3; cycle++) {
       const startDeaths = game.state.totalDeaths;
       const startKills = game.state.totalKills;
       const essBefore = game.state.essence;
       let simS = 0;
+      let nextAudit = 0;
 
       while (simS < CYCLE_CAP_S) {
         game.tick(250);
         simS += 0.25;
         if (Math.round(simS * 4) % 4 === 0) shop(game);
+        if (simS >= nextAudit) {
+          snapshot(cycle, simS / 60);
+          nextAudit += 120;
+        }
         if (game.canReap()) break;
       }
+      snapshot(cycle, simS / 60);
 
       const souls = game.state.soulsThisReap;
       const deaths = game.state.totalDeaths - startDeaths;
@@ -134,6 +164,28 @@ describe('balance report', () => {
     console.log('difficulty probes (last 8 descents): depth | heroTTK | monTTK | wrath');
     for (const p of probes.slice(-8)) {
       console.log(`  ${String(p.depth).padStart(5)} | ${String(p.hTTK).padStart(7)} | ${String(p.mTTK).padStart(6)} | ${p.wrath}`);
+    }
+    console.log('power audit (every ~4 min): cyc | min | atk | maxHP | def | vig | fer | bones/min | min->fer | frontier');
+    for (let i = 0; i < audits.length; i += 2) {
+      const a = audits[i];
+      console.log(`  ${a.cycle} | ${String(a.min).padStart(5)} | ${String(a.atk).padStart(6)} | ${String(a.maxHp).padStart(6)} | ` +
+        `${String(a.def).padStart(5)} | ${String(a.vig).padStart(3)} | ${String(a.fer).padStart(3)} | ` +
+        `${String(a.bonesPerMin).padStart(9)} | ${String(a.minsToFer).padStart(8)} | ${a.frontier}`);
+    }
+    // race exponents per cycle: hero ATK growth vs frontier monster HP growth
+    // over the same window. The runaway complaint is real iff hero > monster.
+    console.log('race exponents (per sim-minute): cycle | hero-atk | frontier-monHP | verdict');
+    for (let c = 1; c <= 3; c++) {
+      const ca = audits.filter((a) => a.cycle === c);
+      if (ca.length < 2) continue;
+      const first = ca[0];
+      const last = ca[ca.length - 1];
+      const mins = Math.max(1, last.min - first.min);
+      const heroExp = Math.log(last.atk / Math.max(1, first.atk)) / mins;
+      const monExp = Math.log(
+        B.monsterHp(Math.max(2, last.frontier)) / B.monsterHp(Math.max(1, first.frontier))) / mins;
+      console.log(`  ${c} | ${heroExp.toFixed(4)} | ${monExp.toFixed(4)} | ` +
+        (heroExp > monExp * 1.15 ? 'hero outruns' : heroExp < monExp * 0.85 ? 'crypt outruns' : 'in step'));
     }
     console.log('final upgrades:', JSON.stringify(game.state.upgrades));
     console.log('final class:', game.state.curClass, '| relics:', game.state.relics.length,
