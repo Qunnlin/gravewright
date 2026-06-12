@@ -29,27 +29,15 @@ into the next version's notes.
 
 ## Gameplay & balance
 
-- [ ] **(P1, L) THE BIG REBALANCE — part 2 (part 1 shipped in PR #4).**
-  Remaining: validate against real human playtests; the asymptotic race
-  (optimal income growth vs monster curves) still allows one-shot bands
-  mid-cycle — intended power fantasy now that Ravenous swallows them, but
-  re-measure after play feedback.
-  Optimally-shopped vessels out-scale the monster curves and late-game
-  difficulty collapses (the balance report already shows near-immortal
-  frontier vessels). Some of this may resolve via other items — faster depth
-  traversal/skip removes the "easy floors are boring" half, the defense
-  rework removes the mitigation checkbox, Crypt Wrath bites hoarders — but a
-  dedicated pass is needed on top. *Approach: extend balance-report with
-  difficulty metrics (vessel TTK vs monster TTK by depth, deaths per hour at
-  optimal play, income-vs-monster-curve exponent comparison), then tune
-  monster curves / income growth / wrath slope / item budgets until the
-  frontier stays lethal at every stage. Tie in the trial overhaul as the
-  intended hard content.*
-- [ ] **(P1, M, needs human late-save) Bone income late-game check** — the
-  bone-scaling pass fixed the eff/cost legs; the income leg (Grand Ossuary
-  ×1.5^l max 30, bonePile/boneDrop) is unmeasurable by the 3-cycle robot.
-  Verify minutes-to-next-level stays sane at reaps 5+ on a real save; trim
-  Ossuary (×1.35 or lower max) if bones still firehose.
+- [ ] **(P1, M, needs a human) THE v1.1 FEEL-PASS** — the robot validated
+  curve *shape* across the defense/lethality/bone-scaling arc (race
+  exponents now "in step", wall d18–20, frontier never one-shot); only play
+  can validate *feel*. One evening on a real save, checking: does the Ward
+  read right (sheen/shards, no numbers)? early-game deaths? does buying
+  ferocity still feel rewarding at cost 1.28? bone income at reaps 5+
+  (Grand Ossuary ×1.5^l is unmeasurable by the 3-cycle robot — trim to
+  ×1.35 if bones firehose)? mid-cycle one-shot bands (intended fantasy —
+  still fun?). *Each finding is a one-constant patch release.*
 - [ ] **(P2, S, validation) Deep-era field trip** — nobody has organically
   visited the Drowned Archive (50+) or Ossuary City (100+); play a deep
   Deep-Memory save and check palettes/natives/loot feel + era thresholds.
@@ -79,9 +67,6 @@ into the next version's notes.
 
 ## UX & presentation
 
-- [ ] **(P2, M) Log rework** — prettier and more informative: grouping/
-  collapsing repeats ("×12"), icons, filter toggles (combat/loot/system),
-  timestamps or depth markers.
 - [ ] **(P2, L) New icons for classes & monsters** — current single-glyph look
   is plain; consider a sprite/icon dependency (e.g. a CC0 roguelike tileset or
   game-icons.net SVG set) for classes, monsters, items. *Touches render.ts
@@ -89,14 +74,6 @@ into the next version's notes.
 
 ## Systems & meta
 
-- [ ] **(P1, M) Admin/dev test room** — a gitignored dev page (or `?dev=1`
-  mode) to spawn any item/set/monster/trial, grant currencies, jump depths —
-  for testing everything quickly. *Gitignored `dev.html` + exposed window.GW
-  helpers, or a dev-only panel module excluded from the build by env flag.*
-- [ ] **(P2, L) Codex (in-game wiki)** — entries unlock as monsters are slain
-  / items found: stats, specials, uniques, mechanics (wrath, trials, reaping
-  math). *`GameState.codex` counts (sanitize!); render from data tables so it
-  never drifts; silhouette → name → full stats tiers.*
 - [ ] **(P2, L) Leaderboard service** — separate small service; players upload
   saves, score computed SERVER-side from the save (never trust the client),
   version-pinned, plausibility checks (souls vs kills vs playtime). Light
