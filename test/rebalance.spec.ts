@@ -6,24 +6,50 @@ import { seedRng } from '../src/core/rng';
 import { bus } from '../src/core/events';
 import * as B from '../src/core/balance';
 
-describe('hero defense: flat soak, capped per hit', () => {
-  it('soaks exactly def below the cap, and the cap share above it', () => {
-    // small hit, big armor: the cap binds — 25% always gets through
-    expect(B.heroDamageAfterDef(100, 1e6)).toBeCloseTo(100 * (1 - B.DEF_SOAK_CAP));
-    // big hit, small armor: flat soak binds — damage = raw − def
-    expect(B.heroDamageAfterDef(1000, 100)).toBe(900);
+describe('hero defense: the eHP system (ratio reduction, damage floor)', () => {
+  it('reduction = def/(def+K) with K tied to local enemy power', () => {
+    const depth = 10;
+    const k = B.defenseK(depth);
+    // at def == K, exactly half the hit gets through
+    expect(B.heroDamageAfterDef(100, k, depth)).toBeCloseTo(50);
     // zero armor: full damage
-    expect(B.heroDamageAfterDef(123, 0)).toBe(123);
+    expect(B.heroDamageAfterDef(123, 0, depth)).toBe(123);
   });
 
-  it('every point of DEF helps until the cap, and depth dilutes the share', () => {
-    // below the cap line, +1 def = exactly −1 damage (maximal legibility)
-    expect(B.heroDamageAfterDef(1000, 101)).toBe(B.heroDamageAfterDef(1000, 100) - 1);
-    // the same armor soaks a smaller SHARE of a deeper monster's swing
-    const def = 100;
-    const shallowShare = 1 - B.heroDamageAfterDef(B.monsterAtk(5), def) / B.monsterAtk(5);
-    const deepShare = 1 - B.heroDamageAfterDef(B.monsterAtk(30), def) / B.monsterAtk(30);
-    expect(deepShare).toBeLessThan(shallowShare);
+  it('scale-invariance: 100x defense vs 100x enemy power = same reduction', () => {
+    // find a deep depth where monsterAtk is ~100x the shallow value
+    const shallow = 1;
+    let deep = shallow;
+    while (B.monsterAtk(deep) < B.monsterAtk(shallow) * 100) deep++;
+    const ratio = B.monsterAtk(deep) / B.monsterAtk(shallow);
+    const def = 10;
+    const sharedShallow = B.heroDamageAfterDef(100, def, shallow) / 100;
+    const sharedDeep = B.heroDamageAfterDef(100, def * ratio, deep) / 100;
+    expect(sharedDeep).toBeCloseTo(sharedShallow, 5);
+  });
+
+  it('the damage floor forbids immortality; eHP strictly grows with def', () => {
+    const depth = 20;
+    // even absurd armor lets >= MIN_DMG_FRAC of every hit through
+    expect(B.heroDamageAfterDef(1000, 1e15, depth))
+      .toBeCloseTo(1000 * B.DEF_MIN_DMG_FRAC);
+    // eHP climbs with every single point, forever (until the floor bound)
+    let prev = B.heroEffectiveHp(100, 0, depth);
+    for (const def of [1, 10, 100, 1000, 10000]) {
+      const cur = B.heroEffectiveHp(100, def, depth);
+      expect(cur).toBeGreaterThan(prev);
+      prev = cur;
+    }
+    // and the floor bounds it at maxHp / MIN_DMG_FRAC
+    expect(B.heroEffectiveHp(100, 1e18, depth))
+      .toBeCloseTo(100 / B.DEF_MIN_DMG_FRAC);
+  });
+
+  it('fresh-run band: the first armor purchase sits in 20-40% vs depth 1', () => {
+    const firstBulwark = 2 * 1 * Math.pow(1.1, 1); // Ossified Hide level 1
+    const through = B.heroDamageAfterDef(100, firstBulwark, 1) / 100;
+    expect(1 - through).toBeGreaterThanOrEqual(0.2);
+    expect(1 - through).toBeLessThanOrEqual(0.4);
   });
 
   it('monster mitigation is unchanged (fixed pivot)', () => {

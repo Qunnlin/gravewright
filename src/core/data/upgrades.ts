@@ -190,6 +190,15 @@ export const ESSENCE_UPGRADES: UpgradeDef[] = [
     effDesc: (l) => `Bones ×${Math.pow(1.5, l).toFixed(2)}`,
   },
   {
+    id: 'aegis', pool: 'essence', name: 'Grave Aegis',
+    desc: 'Armor remembered across every collapse. ×1.2 defense per level (compounding).',
+    // the prestige leg of defense = base × mult × prestigeMult: resets put
+    // armor investment onto a steeper curve so it can chase enemy power
+    base: 5, growth: 2.1, max: 30, minReaps: 1,
+    eff: (l) => Math.pow(1.2, l),
+    effDesc: (l) => `DEF ×${Math.pow(1.2, l).toFixed(2)}`,
+  },
+  {
     id: 'memory', pool: 'essence', name: 'Deep Memory',
     desc: 'The crypt remembers your descent. Vessels begin 2 depths lower per level.',
     // max 10→50, growth 2.5→1.9 (2026-06-12): the endgame frontier should
