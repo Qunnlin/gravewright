@@ -339,15 +339,43 @@ main {
   background: linear-gradient(90deg, #6e1226, #c43050 70%, #e0556f);
   transition: width 0.15s;
 }
-/* the Ward: pale grave-light the armor weaves after the flesh —
-   luminous, not metallic; the dark below thins it */
+/* the Ward: a film of pale grave-light GLAZING the flesh — its opacity
+   is the reduction ratio, set per-frame in uiFrame. The dark below dulls
+   it; a landed blow makes it gutter, then it settles back. */
 .bar .fill.ward {
   position: absolute;
   top: 0;
   left: 0;
-  background: linear-gradient(90deg, #7d92c4, #c8d8f5 60%, #e8f1ff);
-  box-shadow: 0 0 8px rgba(200, 216, 245, 0.45);
-  transition: width 0.15s, left 0.15s;
+  background: linear-gradient(180deg, rgba(232, 241, 255, 0.9), rgba(125, 146, 196, 0.5) 70%, rgba(200, 216, 245, 0.8));
+  box-shadow: inset 0 0 6px rgba(232, 241, 255, 0.6);
+  mix-blend-mode: screen;
+  transition: width 0.15s, opacity 0.3s;
+  pointer-events: none;
+}
+
+.bar .fill.ward.gutter { animation: ward-gutter 0.28s ease-out; }
+
+@keyframes ward-gutter {
+  0% { opacity: 1; }
+  45% { opacity: 0.08; }
+  /* no 100% frame: it settles back to the inline ratio-driven opacity */
+}
+
+/* a shard of ward-light cracks off where the blow landed */
+.ward-shard {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: linear-gradient(180deg, #e8f1ff, #9fb4dd);
+  box-shadow: 0 0 7px rgba(200, 216, 245, 0.8);
+  border-radius: 1px;
+  pointer-events: none;
+  animation: ward-shard-fall 0.4s ease-in forwards;
+}
+
+@keyframes ward-shard-fall {
+  from { opacity: 0.95; transform: translateY(0) skewX(0deg); }
+  to { opacity: 0; transform: translateY(9px) skewX(-14deg); }
 }
 /* segment ticks over the hp bar */
 .bar.hp::after {

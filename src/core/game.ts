@@ -1509,9 +1509,10 @@ export class Game {
     if (m.enchants.includes('volatile')) {
       const dist = Math.abs(m.x - this.heroPos.x) + Math.abs(m.y - this.heroPos.y);
       if (dist <= 1 && !this.devInvulnerable) {
-        const blast = Math.max(1,
-          B.heroDamageAfterDef(B.monsterAtk(run.depth) * 1.6, this.d.def, run.depth));
+        const blastRaw = B.monsterAtk(run.depth) * 1.6;
+        const blast = Math.max(1, B.heroDamageAfterDef(blastRaw, this.d.def, run.depth));
         run.hp -= blast;
+        if (blastRaw - blast >= 1) bus.emit({ type: 'wardhit', soaked: blastRaw - blast });
         bus.emit({ type: 'shake', power: 5 });
         bus.emit({ type: 'sound', name: 'hurt' });
         bus.emit({
@@ -1817,7 +1818,8 @@ export class Game {
     let raw = m.atk * rndf(1 - B.DMG_VARIANCE, 1 + B.DMG_VARIANCE);
     if (m.specials.includes('deadly') && chance(0.2)) raw *= 2;
 
-    let dmg = Math.max(1, B.heroDamageAfterDef(raw, d.def, run.depth));
+    const afterDef = Math.max(1, B.heroDamageAfterDef(raw, d.def, run.depth));
+    let dmg = afterDef;
     dmg *= 1 - d.blockPct / 100;
     dmg = Math.max(1, dmg);
 
@@ -1855,6 +1857,10 @@ export class Game {
 
     run.hp -= dmg;
     run.lastHitTurn = run.turn;
+    // the ward visibly eats its share (dot ticks never emit this — they
+    // bypass the ward, and the missing shard quietly teaches that)
+    const soaked = raw - afterDef;
+    if (soaked >= 1) bus.emit({ type: 'wardhit', soaked });
     bus.emit({
       type: 'float', x: this.heroPos.x, y: this.heroPos.y,
       text: `-${fmt(Math.round(dmg))}`, color: '#ff5555',

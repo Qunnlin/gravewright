@@ -84,6 +84,9 @@ function onEvent(e: GameEvent): void {
     case 'dirty':
       queueRender();
       break;
+    case 'wardhit':
+      onWardHit(e.soaked);
+      break;
     case 'death':
       playSound(game, 'death');
       break;
@@ -412,6 +415,30 @@ function statusIconsFrame(): void {
   }
 }
 
+/** A blow landed and the ward ate `soaked` of it: a shard of light cracks
+ *  off the bar's fill edge and the sheen gutters before settling back to
+ *  its ratio-driven brightness. Dot ticks never call this — they bypass
+ *  the ward, and the missing shard quietly teaches that rule. */
+function onWardHit(soaked: number): void {
+  const run = game.state.run;
+  if (!run) return;
+  const wardEl = $('hud-ward-fill');
+  wardEl.classList.remove('gutter');
+  void wardEl.offsetWidth; // restart the flicker
+  wardEl.classList.add('gutter');
+  if (!game.state.settings.particles) return;
+  const d = game.d;
+  const eHp = B.heroEffectiveHp(d.maxHp, d.def, run.depth);
+  const edgePct = Math.max(0, Math.min(100, (Math.max(0, run.hp) / d.maxHp) * 100));
+  const widthPct = Math.max(1, Math.min(18, (soaked / eHp) * 100));
+  const shard = document.createElement('div');
+  shard.className = 'ward-shard';
+  shard.style.left = `${Math.max(0, edgePct - widthPct)}%`;
+  shard.style.width = `${widthPct}%`;
+  document.querySelector('.bar.hp')?.appendChild(shard);
+  setTimeout(() => shard.remove(), 450);
+}
+
 const lastCurVals: Record<string, number> = {};
 const lastBump: Record<string, number> = {};
 
@@ -459,8 +486,9 @@ export function uiFrame(): void {
         ? '◈ FELL THE AVATAR'
         : `◈ survive ${trial.turnsSurvived}/${trial.totalTurns}`
       : s.auto ? game.goal : 'Manual control';
-    // the bar: flesh (red) plus the WARD — pale grave-light the armor
-    // weaves at this depth. Same drain fraction, honest capacity.
+    // one pool on screen: plain red HP. The Ward is a luminous FILM over
+    // the filled portion — its brightness IS the reduction ratio, so it
+    // visibly dulls as the dark below thins it.
     const eHp = B.heroEffectiveHp(d.maxHp, d.def, run.depth);
     const wardFactor = eHp / d.maxHp;
     const hp = Math.max(0, run.hp);
@@ -468,12 +496,12 @@ export function uiFrame(): void {
     $('hud-hp-text').textContent = wardNow > 0
       ? `${fmt(Math.ceil(hp))} / ${fmt(d.maxHp)}  (+${fmt(wardNow)})`
       : `${fmt(Math.ceil(hp))} / ${fmt(d.maxHp)}`;
-    const fleshPct = Math.min(100, (hp / eHp) * 100);
-    const wardPct = Math.min(100 - fleshPct, fleshPct * (wardFactor - 1));
+    const fleshPct = Math.max(0, Math.min(100, (hp / d.maxHp) * 100));
     ($('hud-hp-fill') as HTMLElement).style.width = `${fleshPct}%`;
     const wardEl = $('hud-ward-fill') as HTMLElement;
-    wardEl.style.left = `${fleshPct}%`;
-    wardEl.style.width = `${wardPct}%`;
+    wardEl.style.width = `${fleshPct}%`;
+    const reduction = 1 - d.maxHp / eHp; // def/(def+K), the real mechanic
+    wardEl.style.opacity = wardNow > 0 ? String(0.15 + 0.65 * reduction) : '0';
     const xpNeed = B.xpForLevel(run.level);
     ($('hud-xp-fill') as HTMLElement).style.width =
       `${Math.max(0, Math.min(100, (run.xp / xpNeed) * 100))}%`;
