@@ -1160,15 +1160,21 @@ export class Game {
 
     // shrine — deliberately walking here works even at full health (the
     // blessing and the ritual count are worth the gold on their own);
-    // the autopilot still only drinks when hurt
-    if (floor.tiles[i] === TILE.SHRINE && floor.shrine && !floor.shrine.used) {
-      const cost = this.d.shrinesFree ? 0 : Math.ceil(
-        B.shrineCost(run.depth) * (this.d.powers.includes('leastpriv') ? 0.5 : 1));
+    // the autopilot still only drinks fresh shrines when hurt. A SPENT
+    // shrine can be deliberately RE-LIT at an escalating price (v1.4.0
+    // gold sink): ×SHRINE_RELIGHT_MULT per previous use.
+    if (floor.tiles[i] === TILE.SHRINE && floor.shrine &&
+        (!floor.shrine.used || deliberate)) {
+      const relight = Math.pow(B.SHRINE_RELIGHT_MULT, floor.shrine.uses);
+      const cost = this.d.shrinesFree && floor.shrine.uses === 0 ? 0 : Math.ceil(
+        B.shrineCost(run.depth) * relight *
+        (this.d.powers.includes('leastpriv') ? 0.5 : 1));
       if ((deliberate || run.hp < this.d.maxHp) && s.gold >= cost) {
         s.gold -= cost;
         run.hp = this.d.maxHp;
         run.blessTurns = B.BLESS_TURNS;
         floor.shrine.used = true;
+        floor.shrine.uses++;
         s.shrinesUsed++;
         run.shrinesThisRun++;
         // the Ledgerstone: every payment returns 150% of its cost in bones
@@ -1188,6 +1194,25 @@ export class Game {
           log('Somewhere below, a seal grinds open.', 'mystic');
         }
         this.checkAchievements();
+      }
+    }
+
+    // the Peddler: mystery wares, cash up front (deliberate visits only)
+    if (floor.tiles[i] === TILE.PEDDLER && floor.peddler &&
+        floor.peddler.stock > 0 && deliberate) {
+      const pd = floor.peddler;
+      const price = Math.ceil(B.goldPile(run.depth) * B.PEDDLER_PRICE_PILES *
+        Math.pow(2, B.PEDDLER_STOCK - pd.stock));
+      if (s.gold >= price) {
+        s.gold -= price;
+        pd.stock--;
+        const minRarity = chance(B.PEDDLER_LEGENDARY_CHANCE) ? 5 : 3;
+        this.acquireItem(rollItem(run.depth, minRarity, run.klass));
+        bus.emit({ type: 'sound', name: 'chest' });
+        log(`The Peddler takes ${fmt(price)} gold and hands over something wrapped in grave-cloth.`, 'gold');
+        if (pd.stock === 0) log('The Peddler bows, sold out, and stops meeting your eye.', 'system');
+      } else {
+        log(`The Peddler wants ${fmt(price)} gold. The ledger says no.`, 'system');
       }
     }
 
@@ -1609,6 +1634,24 @@ export class Game {
       this.gainSouls(1 + run.depth * 0.25);
     }
 
+    // the caught Loot Goblin bursts like a piñata
+    if (m.key === 'lootgoblin') {
+      const burst = this.gainGold(B.goldPile(run.depth) * B.GOBLIN_GOLD_PILES);
+      bus.emit({ type: 'sound', name: 'chest' });
+      log(`The Loot Goblin bursts: +${fmt(burst)} gold scatters everywhere.`, 'gold');
+      if (chance(B.GOBLIN_VESTIGE_CHANCE)) {
+        const piece = rollSetPiece(
+          trialSetFor(run.klass, run.curseIds),
+          pick(['weapon', 'armor', 'charm'] as Slot[]), run.depth);
+        if (piece) {
+          this.acquireItem(piece);
+          log('Something rainbow falls from its sack.', 'mystic');
+        }
+      } else {
+        this.acquireItem(rollItem(run.depth, 5, run.klass));
+      }
+    }
+
     // Coinblade: every kill pays its toll
     if (this.d.powers.includes('tollkeeper')) {
       this.gainGold(B.monsterGold(run.depth) * 2);
@@ -1765,6 +1808,39 @@ export class Game {
     const run = this.state.run!;
     const floor = run.floor;
     const distToHero = Math.abs(m.x - this.heroPos.x) + Math.abs(m.y - this.heroPos.y);
+
+    // the Loot Goblin wants none of this: it runs uphill on the hero's
+    // own distance field, and it does not wait forever
+    if (m.flees) {
+      if (m.despawnIn !== undefined && --m.despawnIn <= 0) {
+        floor.monsters = floor.monsters.filter((x) => x !== m);
+        if (floor.visible[m.y * floor.w + m.x]) {
+          log(`${m.name} wriggles into a crack — gone, hoard and all.`, 'monster');
+        }
+        return;
+      }
+      let best: { x: number; y: number } | null = null;
+      let bestD = dist[m.y * floor.w + m.x];
+      for (const [ox, oy] of [[0, -1], [0, 1], [-1, 0], [1, 0]] as const) {
+        const nx = m.x + ox;
+        const ny = m.y + oy;
+        if (!isPassable(floor, nx, ny)) continue;
+        const ni = ny * floor.w + nx;
+        if (occupied.has(ni)) continue;
+        const dd = dist[ni];
+        if (dd > bestD) {
+          bestD = dd;
+          best = { x: nx, y: ny };
+        }
+      }
+      if (best) {
+        occupied.delete(m.y * floor.w + m.x);
+        m.x = best.x;
+        m.y = best.y;
+        occupied.add(best.y * floor.w + best.x);
+      }
+      return; // it never fights
+    }
 
     // summoners raise help
     if (m.specials.includes('summon')) {

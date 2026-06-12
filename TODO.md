@@ -44,9 +44,8 @@ into the next version's notes.
 - [ ] **(P2, M) More essence sinks** — e.g. *very slightly* increased trial
   and unique-drop chances, very expensive, carefully balanced. *New essence
   upgrades with tiny eff values; cap levels hard.*
-- [ ] **(P2, M) More gold sinks** — gold piles up mid-run with little to do.
-  Candidates: in-run gambler/peddler, shrine re-rolls, and the item-raising
-  service below.
+- [x] ~~More gold sinks~~ — shipped as v1.4.0: the Peddler's mystery wares,
+  shrine re-lighting (×3 per use), and shrine/reforge price bites.
 - [x] ~~EQUIPMENT REEVALUATION (audit phase)~~ — done in PR #36: all 11
   affixes traced end-to-end and pinned with tests (one real bug: keyboard
   turns skipped regen — fixed); weapon kinds and rarity budgets audited
@@ -60,9 +59,8 @@ into the next version's notes.
   status-duration reduction, soul-on-crit, echo strike. *scoreItem weight
   spread (atk 2.0 vs xpPct 0.36 per budget point) still unaddressed —
   revisit if auto-equip keeps dumping utility gear.*
-- [ ] **(P2, M) Loot goblin** — ultra-rare special spawn, distinct look, tries
-  to FLEE (new AI: run away from hero), drops a Vestige (or big loot) when
-  caught. *Flee AI = step uphill on the hero BFS field; despawn after N turns.*
+- [x] ~~Loot goblin~~ — shipped as v1.4.0: the fleeing golden `¤` (first
+  flee AI), 30-turn despawn, gold burst + pact-gated Vestige sack.
 - [ ] **(P2, M) Procession rework** — make minions more interesting (positioning?
   abilities? minion gear?) so the Regalia set has a richer system to amplify;
   maybe a dedicated summoner class whose power IS the procession.

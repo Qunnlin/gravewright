@@ -107,7 +107,8 @@ function buildTip(x: number, y: number): string | null {
 
 function monsterTip(m: Monster): string {
   const lines: string[] = [];
-  const rank = m.boss ? 'Boss'
+  const rank = m.flees ? 'Skittish quarry — it RUNS'
+    : m.boss ? 'Boss'
     : m.mini ? 'Vault Warden'
     : m.elite ? 'Dread elite'
     : m.enchants.length > 0 ? 'Champion'
@@ -163,7 +164,12 @@ function tileTip(floor: Floor, t: number, vis: boolean): string | null {
       return `<span class='tip-name' style='color:#ff5566'>▼ Stairs</span><br><span class='tip-sub'>${sub} (Space when standing here)</span>` + fog;
     }
     case TILE.SHRINE: {
-      if (floor.shrine?.used) return `<span class='tip-name' style='color:#4a4658'>☩ A spent shrine</span><br><span class='tip-sub'>cold and grey; it has nothing left to give</span>` + fog;
+      if (floor.shrine?.used) {
+        const relight = Math.ceil(B.shrineCost(floor.depth) *
+          Math.pow(B.SHRINE_RELIGHT_MULT, floor.shrine.uses) *
+          (game.d.powers.includes('leastpriv') ? 0.5 : 1));
+        return `<span class='tip-name' style='color:#4a4658'>☩ A spent shrine</span><br><span class='tip-sub'>step here deliberately to re-light it — ⛁ ${fmt(relight)} gold</span>` + fog;
+      }
       const cost = game.d.shrinesFree ? 'free for this vessel' : `⛁ ${fmt(B.shrineCost(floor.depth))} gold`;
       return `<span class='tip-name' style='color:#ffee88'>☩ Shrine</span><br><span class='tip-sub'>full heal + ${B.BLESS_TURNS} turns of +25% damage — ${cost}</span>` + fog;
     }
@@ -175,6 +181,14 @@ function tileTip(floor: Floor, t: number, vis: boolean): string | null {
       return floor.trial?.used
         ? `<span class='tip-name' style='color:#3a2a55'>◈ The spent altar</span><br><span class='tip-sub'>the Hall has already made its wager</span>` + fog
         : `<span class='tip-name rainbow-text'>◈ The Sealed Hall</span><br><span class='tip-sub'>step here to hear the wager: survive the onslaught for a Vestige — or forfeit souls</span>` + fog;
+    case TILE.PEDDLER: {
+      if (!floor.peddler || floor.peddler.stock === 0) {
+        return `<span class='tip-name' style='color:#4a4658'>⚖ The Peddler</span><br><span class='tip-sub'>sold out — he no longer meets your eye</span>` + fog;
+      }
+      const price = Math.ceil(B.goldPile(floor.depth) * B.PEDDLER_PRICE_PILES *
+        Math.pow(2, B.PEDDLER_STOCK - floor.peddler.stock));
+      return `<span class='tip-name' style='color:#ffcf66'>⚖ The Peddler</span><br><span class='tip-sub'>a mystery item (epic or better), wrapped and final — ⛁ ${fmt(price)} gold · ${floor.peddler.stock} left</span>` + fog;
+    }
     case TILE.VAULT:
       return `<span class='tip-name' style='color:#c4a5ff'>◆ The Vault</span><br><span class='tip-sub'>a sealed treasure room; its Warden guards the hoard</span>` + fog;
     default:

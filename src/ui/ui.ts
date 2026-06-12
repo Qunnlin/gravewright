@@ -10,7 +10,7 @@ import { CLASSES, classById } from '../core/data/classes';
 import { CURSES } from '../core/data/curses';
 import { RELICS, relicById } from '../core/data/relics';
 import { SETS, setById } from '../core/data/sets';
-import { BIOME_MONSTERS, MONSTERS, SPECIAL_NOTES } from '../core/data/monsters';
+import { BIOME_MONSTERS, MONSTERS, SPECIAL_MONSTERS, SPECIAL_NOTES } from '../core/data/monsters';
 import { ENCHANTS } from '../core/data/enchants';
 import { BIOMES, biomeById } from '../core/data/biomes';
 import { ACHIEVEMENTS } from '../core/data/achievements';
@@ -1149,7 +1149,7 @@ function panelCodex(): string {
   }
 
   // --- bestiary ---
-  const allMon = [...MONSTERS, ...BIOME_MONSTERS];
+  const allMon = [...MONSTERS, ...BIOME_MONSTERS, ...SPECIAL_MONSTERS];
   const monKnown = allMon.filter((m) => codexCount('mon:' + m.key) > 0).length;
   const bestiary = allMon.map((m) => {
     const kills = codexCount('mon:' + m.key);

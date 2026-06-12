@@ -9,6 +9,29 @@ and bumps `src/core/version.ts` + `package.json`.
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-06-12 · The Price of Everything
+
+### Added
+
+- **The Loot Goblin** — an ultra-rare golden `¤` that *runs from you* (the
+  game's first fleeing AI: it climbs the hero's own distance field) and
+  wriggles away with its hoard after 30 turns. Catch it for a gold burst
+  and either a Vestige (pact-gated, same rules as the Sealed Hall) or a
+  legendary. Never on boss or trial floors; `?dev=1` can spawn one. (#39)
+- **The Peddler** — a rare `⚖` floor fixture selling mystery items (epic or
+  better, 10% legendary) wrapped and final: 10 goldPiles, doubling per
+  purchase, three per floor. Deliberate visits only — the autopilot never
+  spends your gold. (#39)
+- **Shrine re-lighting** — a spent shrine can be deliberately re-lit for
+  the shrine price ×3 per previous use: a repeatable, escalating gold sink
+  that also feeds the three-blessing ritual. (#39)
+
+### Balance
+
+- Gold prices bite harder across the board: shrines 20·1.15^d → 24·1.16^d,
+  reforging 40 → 55 goldPiles. (#39)
+
+
 ## [1.3.0] — 2026-06-12 · Standing Orders
 
 ### Added

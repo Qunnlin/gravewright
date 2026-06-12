@@ -7,7 +7,7 @@
 import type { Game } from '../core/game';
 import type { Floor, RunState, Slot } from '../core/types';
 import { bus, log } from '../core/events';
-import { spawnMonster, DEFAULT_MODS } from '../core/dungeon';
+import { spawnLootGoblin, spawnMonster, DEFAULT_MODS } from '../core/dungeon';
 import { rollItem } from '../core/data/items';
 import { SETS, rollSetPiece } from '../core/data/sets';
 import { RELICS } from '../core/data/relics';
@@ -72,6 +72,7 @@ function render(): void {
       <button class="btn tiny" data-dev="spawn" data-id="elite">elite</button>
       <button class="btn tiny" data-dev="spawn" data-id="mini">warden</button>
       <button class="btn tiny" data-dev="spawn" data-id="boss">boss</button>
+      <button class="btn tiny" data-dev="goblin">goblin</button>
       <button class="btn tiny" data-dev="trial">trial next floor</button>
       <button class="btn tiny" data-dev="wrath">+1 wrath step</button>
       <button class="btn tiny" data-dev="biome" data-id="server">srv room</button>
@@ -145,6 +146,18 @@ function handle(act: string, id: string): void {
       }
       break;
     }
+    case 'goblin':
+      if (run) {
+        const spot = [[2, 0], [0, 2], [-2, 0], [0, -2]]
+          .map(([dx, dy]) => ({ x: game.heroPos.x + dx, y: game.heroPos.y + dy }))
+          .find((p) => run.floor.tiles[p.y * run.floor.w + p.x] !== 0);
+        if (spot) {
+          const g = spawnLootGoblin(run.depth, spot.x, spot.y);
+          g.awake = true;
+          run.floor.monsters.push(g);
+        }
+      }
+      break;
     case 'trial':
       s.trialPending = true;
       log('⚙ A Sealed Hall waits on the next non-boss floor.', 'system');

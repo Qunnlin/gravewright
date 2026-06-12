@@ -83,6 +83,7 @@ const TILE_GLYPHS: Record<number, { glyph: string; color: string }> = {
   [TILE.STAIRS]: { glyph: '▼', color: '#ff5566' },
   [TILE.SHRINE]: { glyph: '☩', color: '#ffee88' },
   [TILE.WELL]: { glyph: '◉', color: '#bb99ff' },
+  [TILE.PEDDLER]: { glyph: '⚖', color: '#ffcf66' },
 };
 
 /** ---- depth atmosphere ----
@@ -336,12 +337,13 @@ function drawFloor(): void {
           // spent shrines and wells go cold and grey — no glow, no promise
           const spent =
             (t === TILE.SHRINE && floor.shrine?.used) ||
-            (t === TILE.WELL && floor.well?.used);
+            (t === TILE.WELL && floor.well?.used) ||
+            (t === TILE.PEDDLER && floor.peddler?.stock === 0);
           if (spent) {
             ctx.fillStyle = vis ? '#4a4658' : '#2a2734';
           } else {
             ctx.fillStyle = vis ? special.color : dim(special.color);
-            if (vis && (t === TILE.SHRINE || t === TILE.WELL)) {
+            if (vis && (t === TILE.SHRINE || t === TILE.WELL || t === TILE.PEDDLER)) {
               ctx.shadowColor = special.color;
               ctx.shadowBlur = 8;
             }
@@ -452,7 +454,7 @@ function drawNameTags(): void {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   for (const m of floor.monsters) {
-    if (!(m.boss || m.mini || m.elite || m.enchants.length > 0)) continue;
+    if (!(m.boss || m.mini || m.elite || m.enchants.length > 0 || m.flees)) continue;
     if (!floor.visible[m.y * floor.w + m.x]) continue;
     let name = m.name;
     if (name.length > 28) name = name.slice(0, 27) + '…';
