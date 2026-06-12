@@ -350,6 +350,13 @@ function onClick(ev: MouseEvent): void {
       queueRender();
       break;
     }
+    case 'cycle-peddlerauto': {
+      const po = ['ignore', 'one', 'all'] as const;
+      const pc = po.indexOf(game.state.settings.peddlerAuto);
+      game.state.settings.peddlerAuto = po[(pc + 1) % po.length];
+      queueRender();
+      break;
+    }
     case 'log-filter': {
       const key = ('log' + id[0].toUpperCase() + id.slice(1)) as 'logCombat' | 'logLoot' | 'logSystem';
       game.state.settings[key] = !game.state.settings[key];
@@ -1307,6 +1314,10 @@ function panelSettings(): string {
     <div class="setting-row" data-tip="Standing order for Sealed Hall wagers found on autopilot: ask (pause with the offer), always swear, or always walk past. Manual encounters always ask.">
       <span>Auto-trial wagers</span>
       <button class="btn" data-act="cycle-trialauto">${{ ask: 'ask me', accept: 'always swear', decline: 'always walk' }[s.settings.trialAuto]}</button>
+    </div>
+    <div class="setting-row" data-tip="Standing order for Peddlers found on autopilot: walk past, buy one mystery item per floor, or buy him out (prices double per sale). Deliberate visits always buy.">
+      <span>Auto-peddler</span>
+      <button class="btn" data-act="cycle-peddlerauto">${{ ignore: 'walk past', one: 'buy one', all: 'buy out' }[s.settings.peddlerAuto]}</button>
     </div>
     <div class="setting-row" data-tip="Forget every dismissed whisper; the contextual tutorial plays again as each mechanic comes up.">
       <span>Tutorial whispers</span>

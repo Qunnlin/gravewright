@@ -113,8 +113,10 @@ export interface Floor {
   vault: { x: number; y: number; w: number; h: number } | null;
   /** Trial shrine of the Sealed Hall (boss-rush wager). */
   trial: { x: number; y: number; used: boolean } | null;
-  /** the Peddler: mystery wares for gold, stock dwindles (v1.4.0) */
-  peddler: { x: number; y: number; stock: number } | null;
+  /** the Peddler: mystery wares for gold, stock dwindles (v1.4.0);
+   *  autoBought tracks the autopilot's standing-order purchases,
+   *  spotted gates the one-time sighting log */
+  peddler: { x: number; y: number; stock: number; autoBought: number; spotted: boolean } | null;
   /** transient: the offer modal was already shown this visit */
   trialOffered?: boolean;
   floorTileCount: number;
@@ -217,6 +219,9 @@ export interface Settings {
   /** standing order for Sealed Hall wagers found on autopilot:
    *  'ask' pauses with the modal, 'accept'/'decline' resolve instantly */
   trialAuto: 'ask' | 'accept' | 'decline';
+  /** standing order for Peddlers found on autopilot: walk past, buy one
+   *  mystery item per floor, or buy him out (prices double per sale) */
+  peddlerAuto: 'ignore' | 'one' | 'all';
 }
 
 export interface GameState {

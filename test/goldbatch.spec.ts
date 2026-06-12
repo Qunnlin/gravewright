@@ -92,18 +92,44 @@ describe('the peddler', () => {
     const tx = game.heroPos.x + 1;
     const ty = game.heroPos.y;
     floor.tiles[ty * floor.w + tx] = TILE.PEDDLER;
-    floor.peddler = { x: tx, y: ty, stock: B.PEDDLER_STOCK };
+    floor.peddler = { x: tx, y: ty, stock: B.PEDDLER_STOCK, autoBought: 0, spotted: true };
     game.state.gold = 10_000_000;
     const p1 = Math.ceil(B.goldPile(run.depth) * B.PEDDLER_PRICE_PILES);
     game.manualMove(1, 0); // deliberate visit
-    expect(floor.peddler.stock).toBe(B.PEDDLER_STOCK - 1);
+    expect(floor.peddler!.stock).toBe(B.PEDDLER_STOCK - 1);
     expect(game.state.gold).toBe(10_000_000 - p1);
     // second purchase costs double
     const goldAfterFirst = game.state.gold;
     game.manualMove(-1, 0);
     game.manualMove(1, 0);
-    expect(floor.peddler.stock).toBe(B.PEDDLER_STOCK - 2);
+    expect(floor.peddler!.stock).toBe(B.PEDDLER_STOCK - 2);
     expect(game.state.gold).toBe(goldAfterFirst - p1 * 2);
+  });
+});
+
+describe('peddler standing orders', () => {
+  it("'buy one' makes the autopilot purchase exactly once per floor", () => {
+    const game = freshGame(47);
+    const run = game.state.run!;
+    const floor = run.floor;
+    run.statuses = [];
+    floor.monsters = [];
+    clearAround(game, game.heroPos.x, game.heroPos.y, 5);
+    const tx = game.heroPos.x + 3;
+    const ty = game.heroPos.y;
+    floor.tiles[ty * floor.w + tx] = TILE.PEDDLER;
+    floor.peddler = { x: tx, y: ty, stock: B.PEDDLER_STOCK, autoBought: 0, spotted: true };
+    floor.seen[ty * floor.w + tx] = 1;
+    game.state.gold = 10_000_000;
+    game.state.settings.peddlerAuto = 'one';
+    game.state.totalDeaths = 1; // unlock the autopilot
+    game.state.auto = true;
+    for (let i = 0; i < 200 && floor.peddler.stock === B.PEDDLER_STOCK; i++) game.tick(250);
+    expect(floor.peddler.stock).toBe(B.PEDDLER_STOCK - 1);
+    // it does not keep buying: a while longer, still one purchase
+    for (let i = 0; i < 80; i++) game.tick(250);
+    expect(floor.peddler.stock).toBe(B.PEDDLER_STOCK - 1);
+    expect(floor.peddler.autoBought).toBe(1);
   });
 });
 
