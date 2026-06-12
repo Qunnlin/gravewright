@@ -80,7 +80,7 @@ export function defaultState(): GameState {
       sound: true, autoBuyBones: true, particles: true,
       autoEquip: true, autoSalvageBelow: 0, protectRarity: 4,
       buyAmount: 1, autoMend: false, protectVestiges: true, ravenousActive: true,
-      crtFilter: false,
+      crtFilter: true,
       logCombat: true, logLoot: true, logSystem: true,
       autoSpeed: 1,
     },
@@ -867,7 +867,7 @@ export class Game {
       // the Oath-Knot turns refusal into a counter-charge
       if (this.d.powers.includes('laststand')) {
         run.hp = Math.max(1, Math.round(this.d.maxHp * 0.3));
-        run.blessTurns = Math.max(run.blessTurns, 25);
+        run.blessTurns = Math.max(run.blessTurns, B.BLESS_TURNS);
         log('☩ LAST STAND: the Oath refuses the blow — the vessel rises, blessed.', 'shrine');
       } else {
         run.hp = 1;
@@ -1114,7 +1114,7 @@ export class Game {
       if (run.hp < this.d.maxHp && s.gold >= cost) {
         s.gold -= cost;
         run.hp = this.d.maxHp;
-        run.blessTurns = 25;
+        run.blessTurns = B.BLESS_TURNS;
         floor.shrine.used = true;
         s.shrinesUsed++;
         run.shrinesThisRun++;
@@ -1852,10 +1852,10 @@ export class Game {
       m.hp = Math.min(m.maxHp, m.hp + dmg * 0.6);
     }
     if (m.specials.includes('poison')) {
-      this.addStatus('poison', 4, Math.max(1, raw * 0.25));
+      this.addStatus('poison', B.POISON_TURNS, Math.max(1, raw * B.POISON_POWER));
     }
     if (m.specials.includes('burn')) {
-      this.addStatus('burn', 3, Math.max(1, raw * 0.35));
+      this.addStatus('burn', B.BURN_TURNS, Math.max(1, raw * B.BURN_POWER));
     }
     if (m.specials.includes('thief') && s.gold > 0 && !d.thiefProof) {
       const steal = Math.min(s.gold, Math.ceil(B.monsterGold(run.depth) * 3));

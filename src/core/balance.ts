@@ -124,6 +124,19 @@ export function heroEffectiveHp(maxHp: number, def: number, depth: number): numb
   return maxHp * Math.min((def + k) / k, 1 / DEF_MIN_DMG_FRAC);
 }
 
+/** ---- statuses (previously hardcoded in game.ts; playtest 2026-06-12:
+ *  "buffs/debuffs should last longer" — durations raised so the new status
+ *  chips have time to matter) ---- */
+
+/** Shrine blessing: +25% damage for this many hero turns (was 25). */
+export const BLESS_TURNS = 40;
+/** Poison: hero-turns of dot (was 4) and power as a share of the raw hit. */
+export const POISON_TURNS = 7;
+export const POISON_POWER = 0.25;
+/** Burn: shorter but hotter (was 3). */
+export const BURN_TURNS = 5;
+export const BURN_POWER = 0.35;
+
 /** Ravenous Descent: floors collapse when the vessel out-damages their
  *  monsters' (wrath-scaled) health by this factor. Tuned so the fall ends
  *  roughly where fights stop being one-shots (~2.5× raw ≈ TTK 2 after

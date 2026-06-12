@@ -146,7 +146,7 @@ function mergeState(loaded: Partial<GameState>): GameState {
   if (![0, 1, 10].includes(st.buyAmount)) st.buyAmount = 1;
   st.protectVestiges = st.protectVestiges !== false;
   st.ravenousActive = st.ravenousActive !== false;
-  st.crtFilter = st.crtFilter === true; // default-off vanity, strict coercion
+  st.crtFilter = st.crtFilter !== false; // default-ON since the playtest verdict
   st.logCombat = st.logCombat !== false;
   st.logLoot = st.logLoot !== false;
   st.logSystem = st.logSystem !== false;
