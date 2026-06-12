@@ -1,8 +1,8 @@
 import { TILE, type Floor, type Monster } from './types';
+import { biomeById, type BiomeId } from './data/biomes';
 import {
   BOSS_ATK_MULT, BOSS_HP_MULT, CHAMPION_ATK_MULT, CHAMPION_HP_MULT,
   ELITE_ATK_MULT, ELITE_HP_MULT, MINIBOSS_ATK_MULT, MINIBOSS_HP_MULT,
-  SERVER_GOLD_MULT,
   VAULT_CHANCE, bonePile, championChance, elitesOnFloor, goldPile,
   monsterAtk, monsterCount, monsterDef, monsterHp, monsterXp,
 } from './balance';
@@ -108,7 +108,7 @@ export function spawnMonster(
   x: number,
   y: number,
   mods: GenMods,
-  opts: { elite?: boolean; boss?: boolean; mini?: boolean; plain?: boolean; biome?: 'server' } = {},
+  opts: { elite?: boolean; boss?: boolean; mini?: boolean; plain?: boolean; biome?: BiomeId } = {},
 ): Monster {
   const defs = eligibleMonsters(depth, opts.biome);
   // biome natives crowd out the common rabble (×3 weight)
@@ -203,7 +203,7 @@ export function genFloor(
   depth: number,
   mods: GenMods = DEFAULT_MODS,
   withTrial = false,
-  biome?: 'server',
+  biome?: BiomeId,
 ): Floor {
   const tiles = new Uint8Array(FLOOR_W * FLOOR_H); // all WALL
   const isBossFloor = depth % 5 === 0;
@@ -352,23 +352,23 @@ export function genFloor(
   void entryIdx;
 
   // --- loot ---
-  // salvaged hardware: the server room pays richer gold, and its chests are
-  // data caches holding an epic or better (the special flag)
-  const goldMult = biome === 'server' ? SERVER_GOLD_MULT : 1;
+  // biome loot hooks: pile multipliers and special (epic+) chests come from
+  // the biome's def — see data/biomes.ts
+  const bdef = biome ? biomeById(biome) : undefined;
   const goldPiles = rndInt(4, 7);
   for (let i = 0; i < goldPiles; i++) {
     const spot = freeTile(floor, taken);
-    floor.items.push({ ...spot, kind: 'gold', amount: Math.ceil(goldPile(depth) * rndf(0.7, 1.4) * goldMult) });
+    floor.items.push({ ...spot, kind: 'gold', amount: Math.ceil(goldPile(depth) * rndf(0.7, 1.4) * (bdef?.goldMult ?? 1)) });
   }
   const bonePiles = rndInt(2, 4);
   for (let i = 0; i < bonePiles; i++) {
     const spot = freeTile(floor, taken);
-    floor.items.push({ ...spot, kind: 'bones', amount: Math.ceil(bonePile(depth) * rndf(0.7, 1.4)) });
+    floor.items.push({ ...spot, kind: 'bones', amount: Math.ceil(bonePile(depth) * rndf(0.7, 1.4) * (bdef?.boneMult ?? 1)) });
   }
   const chests = rndInt(1, 3);
   for (let i = 0; i < chests; i++) {
     const spot = freeTile(floor, taken);
-    floor.items.push({ ...spot, kind: 'chest', amount: 0, special: biome === 'server' || undefined });
+    floor.items.push({ ...spot, kind: 'chest', amount: 0, special: bdef?.chestsSpecial || undefined });
   }
   if (chance(0.4)) {
     const spot = freeTile(floor, taken);

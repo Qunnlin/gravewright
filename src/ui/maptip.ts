@@ -8,6 +8,7 @@ import { CELL } from './render';
 import { showTipAt, hideTip } from './tooltip';
 import { modalOpen } from './ui';
 import { monsterDefByKey } from '../core/data/monsters';
+import { biomeById } from '../core/data/biomes';
 import { enchantById } from '../core/data/enchants';
 import { classById } from '../core/data/classes';
 import { fmt } from '../core/format';
@@ -103,11 +104,14 @@ function buildTip(x: number, y: number): string | null {
     if (it.x !== x || it.y !== y) continue;
     if (it.kind === 'gold') lines.push(`<span class='tip-name c-gold'>⛁ ${fmt(it.amount)} gold</span><br><span class='tip-sub'>carried by the vessel; mostly lost on death</span>`);
     else if (it.kind === 'bones') lines.push(`<span class='tip-name c-bones'>∴ ${fmt(it.amount)} bones</span><br><span class='tip-sub'>persist through death</span>`);
-    else if (it.kind === 'chest') lines.push(it.special
-      ? (floor.biome === 'server'
-        ? `<span class='tip-name' style='color:#38c8f0'>▣ Data cache</span><br><span class='tip-sub'>salvaged hardware — an epic, or better, still spinning inside</span>`
-        : `<span class='tip-name'>▣ Vault hoard</span><br><span class='tip-sub'>an epic — or better — sleeps inside</span>`)
-      : `<span class='tip-name'>▣ A sealed chest</span><br><span class='tip-sub'>something shifts inside</span>`);
+    else if (it.kind === 'chest') {
+      const bdef = it.special && floor.biome ? biomeById(floor.biome) : undefined;
+      lines.push(it.special
+        ? (bdef
+          ? `<span class='tip-name' style='color:${bdef.cacheColor}'>${esc(bdef.cacheName)}</span><br><span class='tip-sub'>${esc(bdef.cacheDesc)}</span>`
+          : `<span class='tip-name'>▣ Vault hoard</span><br><span class='tip-sub'>an epic — or better — sleeps inside</span>`)
+        : `<span class='tip-name'>▣ A sealed chest</span><br><span class='tip-sub'>something shifts inside</span>`);
+    }
     else if (it.kind === 'potion') lines.push(`<span class='tip-name' style='color:#ff6688'>! A crimson draught</span><br><span class='tip-sub'>restores the vessel's health</span>`);
   }
   if (lines.length > 0) return lines.join('<br>');

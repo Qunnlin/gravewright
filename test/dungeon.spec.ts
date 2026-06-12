@@ -3,6 +3,7 @@ import { seedRng } from '../src/core/rng';
 import { genFloor, bfsMap, DEFAULT_MODS, FLOOR_W, FLOOR_H } from '../src/core/dungeon';
 import { TILE } from '../src/core/types';
 import { eligibleMonsters, bossName } from '../src/core/data/monsters';
+import { BIOMES } from '../src/core/data/biomes';
 import { Game } from '../src/core/game';
 import * as B from '../src/core/balance';
 
@@ -133,73 +134,91 @@ describe('dungeon generation', () => {
     expect(horde.monsters.length).toBeGreaterThan(base.monsters.length);
   });
 
-  it('server-room floors carry natives, richer gold and data-cache chests', () => {
-    // paired generation on the same seed: the biome consumes no extra rng,
-    // so loot rolls align and the gold multiplier is directly observable
-    seedRng(606);
-    const plain = genFloor(16);
-    seedRng(606);
-    const server = genFloor(16, DEFAULT_MODS, false, 'server');
+  it('biome floors carry their natives and loot hooks; honest stone has neither', () => {
+    const NATIVE_KEYS: Record<string, string[]> = {
+      server: ['daemon', 'sentinel', 'coolant'],
+      archive: ['archivist', 'siltchoir'],
+      city: ['sexton', 'marrowtyrant'],
+    };
+    for (const bdef of BIOMES) {
+      const depth = bdef.minDepth + 1;
+      // paired generation on the same seed: the biome consumes no extra rng,
+      // so loot rolls align and the pile multipliers are directly observable
+      seedRng(606);
+      const plain = genFloor(depth);
+      seedRng(606);
+      const themed = genFloor(depth, DEFAULT_MODS, false, bdef.id);
 
-    expect(plain.biome).toBeUndefined();
-    expect(server.biome).toBe('server');
+      expect(plain.biome).toBeUndefined();
+      expect(themed.biome).toBe(bdef.id);
 
-    // every chest in the server room is a data cache (epic+)
-    const chests = server.items.filter((it) => it.kind === 'chest');
-    expect(chests.length).toBeGreaterThan(0);
-    expect(chests.every((c) => c.special)).toBe(true);
+      const chests = themed.items.filter((it) => it.kind === 'chest');
+      expect(chests.length).toBeGreaterThan(0);
+      expect(chests.every((c) => c.special === (bdef.chestsSpecial || undefined)),
+        `${bdef.id} chests`).toBe(true);
 
-    // gold piles pay SERVER_GOLD_MULT richer than the same rolls on stone
-    const plainGold = plain.items.filter((it) => it.kind === 'gold');
-    const serverGold = server.items.filter((it) => it.kind === 'gold');
-    expect(serverGold.length).toBe(plainGold.length);
-    for (let i = 0; i < plainGold.length; i++) {
-      expect(serverGold[i].amount).toBeGreaterThanOrEqual(
-        Math.floor(plainGold[i].amount * B.SERVER_GOLD_MULT) - 1);
+      const plainGold = plain.items.filter((it) => it.kind === 'gold');
+      const themedGold = themed.items.filter((it) => it.kind === 'gold');
+      expect(themedGold.length).toBe(plainGold.length);
+      for (let i = 0; i < plainGold.length; i++) {
+        expect(themedGold[i].amount, `${bdef.id} gold`).toBeGreaterThanOrEqual(
+          Math.floor(plainGold[i].amount * bdef.goldMult) - 1);
+      }
+
+      // natives crowd their biome (weighted ×3) and never spawn on stone
+      let natives = 0;
+      seedRng(607);
+      for (let i = 0; i < 40; i++) {
+        const f = genFloor(depth, DEFAULT_MODS, false, bdef.id);
+        natives += f.monsters.filter((m) => NATIVE_KEYS[bdef.id].includes(m.key)).length;
+        expect(genFloor(depth).monsters.some((m) =>
+          NATIVE_KEYS[bdef.id].includes(m.key)), `${bdef.id} natives on stone`).toBe(false);
+      }
+      expect(natives, `${bdef.id} native count`).toBeGreaterThan(15);
     }
-
-    // natives crowd the racks (weighted ×3) and never spawn on honest stone
-    let natives = 0;
-    seedRng(607);
-    for (let i = 0; i < 60; i++) {
-      const f = genFloor(16, DEFAULT_MODS, false, 'server');
-      natives += f.monsters.filter((m) => ['daemon', 'sentinel', 'coolant'].includes(m.key)).length;
-      expect(genFloor(16).monsters.some((m) =>
-        ['daemon', 'sentinel', 'coolant'].includes(m.key))).toBe(false);
-    }
-    expect(natives).toBeGreaterThan(30);
   });
 
-  it('the server room arrives rarely, deep, and stays for a streak of floors', () => {
+  it('biomes arrive rarely, run their streak, then cool down for a gap', () => {
     seedRng(99001);
     const game = new Game();
     for (let i = 0; i < 400 && !game.state.run; i++) game.tick(100);
     const run = game.state.run!;
     expect(run).toBeTruthy();
 
-    // walk the crypt down and watch the biome sequence
-    run.depth = B.SERVER_ROOM_MIN_DEPTH - 2;
-    const seq: boolean[] = [];
-    for (let i = 0; i < 250; i++) {
+    // walk the crypt down from above the shallowest biome and watch
+    run.depth = 11;
+    const seq: (string | undefined)[] = [];
+    for (let i = 0; i < 400; i++) {
       game.descend();
-      seq.push(game.state.run!.floor.biome === 'server');
+      seq.push(game.state.run!.floor.biome);
     }
 
-    // never above the minimum depth (start offset: first descend lands at MIN-1)
-    expect(seq[0]).toBe(false);
-
-    // streaks exist and every maximal streak is a multiple of the streak
-    // length (back-to-back re-rolls can chain them)
-    const streaks: number[] = [];
-    let cur = 0;
-    for (const s of seq) {
-      if (s) cur++;
-      else if (cur > 0) { streaks.push(cur); cur = 0; }
+    // collect maximal streaks with their gap to the previous streak
+    const streaks: { id: string; len: number; gapBefore: number }[] = [];
+    let cur: string | undefined;
+    let len = 0;
+    let gap = 0;
+    for (const b of seq) {
+      if (b === cur && b !== undefined) { len++; continue; }
+      if (cur !== undefined) streaks.push({ id: cur, len, gapBefore: gap });
+      if (cur !== undefined) gap = 0;
+      if (b === undefined) gap++;
+      cur = b;
+      len = b === undefined ? 0 : 1;
     }
-    // a streak still running when the loop ends is truncated — ignore it
     expect(streaks.length).toBeGreaterThan(0);
-    for (const len of streaks) {
-      expect(len % B.SERVER_ROOM_FLOORS).toBe(0);
+    for (const s of streaks) {
+      expect(s.len, `${s.id} streak length`).toBe(B.BIOME_FLOORS);
+    }
+    // gaps between consecutive streaks honor the cooldown
+    for (const s of streaks.slice(1)) {
+      expect(s.gapBefore, 'gap between biome visits').toBeGreaterThanOrEqual(B.BIOME_COOLDOWN);
+    }
+    // deep eras appear only past their threshold
+    for (let i = 0; i < seq.length; i++) {
+      const depth = 12 + i;
+      if (seq[i] === 'archive') expect(depth).toBeGreaterThanOrEqual(50);
+      if (seq[i] === 'city') expect(depth).toBeGreaterThanOrEqual(100);
     }
   });
 });

@@ -11,7 +11,8 @@ import {
 } from './types';
 import * as B from './balance';
 import { bus, log } from './events';
-import { chance, pick, rndf, rndInt, sideChance } from './rng';
+import { chance, pick, rndf, rndInt, sideRnd } from './rng';
+import { BIOMES, biomeById, type BiomeId } from './data/biomes';
 import {
   DEFAULT_MODS, bfsMap, computeFov, genFloor, genTrialHall, isPassable,
   losClear, nearestWhere, spawnLesser, spawnMonster, type GenMods,
@@ -356,10 +357,9 @@ export class Game {
     const curseIds = Object.keys(s.curses).filter((id) => s.curses[id]);
     const depth = 1 + this.eff('memory');
     const withTrial = this.rollTrial(depth);
-    let biomeFloorsLeft = this.rollBiomeStart(depth, withTrial, 0);
-    const floor = genFloor(depth, this.genMods(curseIds), withTrial,
-      biomeFloorsLeft > 0 ? 'server' : undefined);
-    if (biomeFloorsLeft > 0) biomeFloorsLeft--;
+    const biomeState = { biomeId: null as BiomeId | null, biomeFloorsLeft: 0, biomeCooldown: 0 };
+    const biome = Game.advanceBiome(biomeState, depth, withTrial);
+    const floor = genFloor(depth, this.genMods(curseIds), withTrial, biome);
 
     const run: RunState = {
       depth,
@@ -380,7 +380,9 @@ export class Game {
       oathUsed: false,
       shrinesThisRun: 0,
       lastHitTurn: 0,
-      biomeFloorsLeft,
+      biomeId: biomeState.biomeId,
+      biomeFloorsLeft: biomeState.biomeFloorsLeft,
+      biomeCooldown: biomeState.biomeCooldown,
     };
     s.keptGear = { weapon: null, armor: null, charm: null };
     s.run = run;
@@ -414,8 +416,8 @@ export class Game {
     Object.assign(this.heroPos, floor.entry);
     bus.emit({ type: 'summon', name: run.heroName, klass: run.klass });
     log(`☥ ${run.heroName} shuffles into the crypt (depth ${depth}).`, 'summon');
-    if (floor.biome === 'server') {
-      log('∿ The walls here are too regular. Black racks hum in ordered rows, and something keeps the air cold on purpose.', 'mystic');
+    if (floor.biome) {
+      log(biomeById(floor.biome)!.enterOmen, 'mystic');
     }
     if (floor.isBossFloor) {
       const boss = floor.monsters.find((m) => m.boss);
@@ -439,15 +441,39 @@ export class Game {
     if (this.trail.length > 8) this.trail.pop();
   }
 
-  /** Whether a server-room streak begins at this depth: deep enough, not a
-   *  boss or trial floor, and the side-roll hums. Returns the streak length
-   *  to set (or the running streak unchanged). Uses sideChance so seeded
-   *  gameplay rng is never disturbed by atmosphere. */
-  private rollBiomeStart(depth: number, withTrial: boolean, running: number): number {
-    if (running > 0) return running;
-    if (withTrial || depth % 5 === 0) return 0;
-    if (depth < B.SERVER_ROOM_MIN_DEPTH) return 0;
-    return sideChance(B.SERVER_ROOM_CHANCE) ? B.SERVER_ROOM_FLOORS : 0;
+  /** Advance the biome streak state by one generated floor and return the
+   *  biome of the floor about to be generated. Streaks run BIOME_FLOORS,
+   *  then BIOME_COOLDOWN floors of honest stone before another may begin
+   *  (never starting on boss or trial floors). A single sideRnd() drives
+   *  both the "does a streak start" and "which era" decisions — side-rolls
+   *  never advance the seeded gameplay stream, and consecutive draws would
+   *  return the same value, so every side decision derives from one draw. */
+  private static advanceBiome(
+    st: { biomeId: BiomeId | null; biomeFloorsLeft: number; biomeCooldown: number },
+    depth: number,
+    withTrial: boolean,
+  ): BiomeId | undefined {
+    if (st.biomeFloorsLeft > 0) {
+      st.biomeFloorsLeft--;
+      if (st.biomeFloorsLeft === 0) st.biomeCooldown = B.BIOME_COOLDOWN;
+      return st.biomeId ?? undefined;
+    }
+    st.biomeId = null;
+    if (st.biomeCooldown > 0) {
+      st.biomeCooldown--;
+      return undefined;
+    }
+    if (withTrial || depth % 5 === 0) return undefined;
+    const eligible = BIOMES.filter((b) => depth >= b.minDepth);
+    if (eligible.length === 0) return undefined;
+    const u = sideRnd();
+    if (u >= B.BIOME_CHANCE) return undefined;
+    // the sub-interval position of the successful draw picks the era
+    const idx = Math.min(eligible.length - 1, Math.floor((u / B.BIOME_CHANCE) * eligible.length));
+    st.biomeId = eligible[idx].id;
+    st.biomeFloorsLeft = B.BIOME_FLOORS - 1; // this floor is the first
+    if (st.biomeFloorsLeft === 0) st.biomeCooldown = B.BIOME_COOLDOWN;
+    return st.biomeId;
   }
 
   /** Whether the next floor bears a Sealed Hall. */
@@ -541,15 +567,13 @@ export class Game {
     // band crossing is judged against the last GENERATED floor, so a
     // Ravenous fall across a boundary still gets its omen
     const prevBand = Game.bandOf(run.floor.depth);
-    const wasServer = run.floor.biome === 'server';
+    const prevBiome = run.floor.biome;
 
     run.depth++;
     if (run.depth > s.bestDepth) s.bestDepth = run.depth;
     if (run.depth > s.bestDepthThisReap) s.bestDepthThisReap = run.depth;
     const withTrial = this.rollTrial(run.depth);
-    run.biomeFloorsLeft = this.rollBiomeStart(run.depth, withTrial, run.biomeFloorsLeft);
-    const biome = run.biomeFloorsLeft > 0 ? ('server' as const) : undefined;
-    if (run.biomeFloorsLeft > 0) run.biomeFloorsLeft--;
+    const biome = Game.advanceBiome(run, run.depth, withTrial);
     run.floor = genFloor(run.depth, this.genMods(run.curseIds), withTrial, biome);
     Object.assign(this.heroPos, run.floor.entry);
     this.trail = [];
@@ -566,10 +590,9 @@ export class Game {
       log(omen.text, 'mystic');
       bus.emit({ type: 'flash', color: omen.flash });
     }
-    if (run.floor.biome === 'server' && !wasServer) {
-      log('∿ The walls here are too regular. Black racks hum in ordered rows, and something keeps the air cold on purpose.', 'mystic');
-    } else if (!run.floor.biome && wasServer) {
-      log('∿ The hum fades behind you. Honest stone again.', 'mystic');
+    if (run.floor.biome !== prevBiome) {
+      if (prevBiome) log(biomeById(prevBiome)!.exitOmen, 'mystic');
+      if (run.floor.biome) log(biomeById(run.floor.biome)!.enterOmen, 'mystic');
     }
     // the riddle of the Sealed Hall, murmured rarely
     if (run.depth >= 10 && chance(0.03)) {

@@ -4,6 +4,7 @@ import { TILE, type Floor } from '../core/types';
 import type { Game } from '../core/game';
 import { bus, type GameEvent } from '../core/events';
 import { ATMOSPHERE_BANDS } from '../core/balance';
+import { biomeById } from '../core/data/biomes';
 import { FLOOR_W, FLOOR_H } from '../core/dungeon';
 import { classById } from '../core/data/classes';
 import { MINIONS } from '../core/data/upgrades';
@@ -113,9 +114,14 @@ const BAND_COLORS: Palette[] = [
 /** Depths of fast blending right before each band boundary. */
 const BAND_BLEND = 3;
 
-/** The server room: genua cooler purple racks, digital-blue floor lights. */
-const SERVER_PALETTE: Palette = {
-  bg: '#070512', wall: '#2a2058', wallEdge: '#43339a', floor: '#0a0c20', dot: '#1d4a6e',
+/** Biome palettes override the depth bands entirely (defs in data/biomes.ts). */
+const BIOME_PALETTES: Record<string, Palette> = {
+  // the server room: genua cooler purple racks, digital-blue floor lights
+  server: { bg: '#070512', wall: '#2a2058', wallEdge: '#43339a', floor: '#0a0c20', dot: '#1d4a6e' },
+  // the Drowned Archive: ink and teal, shelves under black water
+  archive: { bg: '#041012', wall: '#14484e', wallEdge: '#1f6e76', floor: '#071417', dot: '#1d5a62' },
+  // the Ossuary City: streets of femur, amber lamplight
+  city: { bg: '#0c0a06', wall: '#4a4030', wallEdge: '#665845', floor: '#171208', dot: '#3a3322' },
 };
 const SERVER_LEDS = ['#38c8f0', '#27e8a7'];
 
@@ -167,8 +173,8 @@ function paletteFor(floor: Floor): ResolvedPalette {
   const key = `${floor.biome ?? ''}:${floor.depth}`;
   if (key === palCacheKey && palCache) return palCache;
   let base: Palette;
-  if (floor.biome === 'server') {
-    base = SERVER_PALETTE;
+  if (floor.biome) {
+    base = BIOME_PALETTES[floor.biome];
   } else {
     // active band: last stop at or below this depth
     let band = 0;
@@ -361,9 +367,9 @@ function drawEntities(): void {
     const i = it.y * floor.w + it.x;
     if (!floor.seen[i]) continue;
     const g = ITEM_GLYPHS[it.kind];
-    // data caches glow digital blue in the server room
-    const color = it.kind === 'chest' && it.special && floor.biome === 'server'
-      ? '#38c8f0' : g.color;
+    // biome caches wear their biome's tint (data caches blue, urns amber…)
+    const color = it.kind === 'chest' && it.special && floor.biome
+      ? biomeById(floor.biome)?.cacheColor ?? g.color : g.color;
     ctx.fillStyle = floor.visible[i] ? color : dim(color);
     ctx.fillText(g.glyph, it.x * CELL + CELL / 2, it.y * CELL + CELL / 2 + 1);
   }

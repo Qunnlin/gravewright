@@ -1,4 +1,5 @@
 import type { MonsterSpecial } from '../types';
+import type { BiomeId } from './biomes';
 
 export interface MonsterDef {
   key: string;
@@ -14,7 +15,7 @@ export interface MonsterDef {
   tier: number;
   specials: MonsterSpecial[];
   /** natives of a biome only spawn there (and spawn often, weighted up) */
-  biome?: 'server';
+  biome?: BiomeId;
   flavor: string;
 }
 
@@ -49,16 +50,23 @@ export const MONSTERS: MonsterDef[] = [
   { key: 'horror',   name: 'Elder Horror',   glyph: 'U', color: '#ff66aa', minDepth: 34, window: Infinity, hpMult: 3.0, atkMult: 2.0, defMult: 3, tier: 6, specials: ['regen','vampiric','deadly'], flavor: 'Older than the rock it sleeps in.' },
 ];
 
-/** Server-room natives — they stalk only the humming biome. */
-export const SERVER_MONSTERS: MonsterDef[] = [
+/** Biome natives — each stalks only its own biome (matched by `biome`). */
+export const BIOME_MONSTERS: MonsterDef[] = [
+  // the server room (depth 13+)
   { key: 'daemon',   name: 'Daemon Process',    glyph: 'p', color: '#38c8f0', minDepth: 13, window: Infinity, hpMult: 0.9, atkMult: 1.25, defMult: 0, tier: 3, specials: ['fast'],              biome: 'server', flavor: 'It was never meant to stop running.' },
   { key: 'sentinel', name: 'Firewall Sentinel', glyph: 'F', color: '#ff9e3d', minDepth: 13, window: Infinity, hpMult: 2.0, atkMult: 1.1,  defMult: 3, tier: 3, specials: ['armored', 'ranged'], biome: 'server', flavor: 'Default policy: deny.' },
   { key: 'coolant',  name: 'Coolant Wraith',    glyph: '≈', color: '#7fd4ff', minDepth: 13, window: Infinity, hpMult: 1.3, atkMult: 1.2,  defMult: 1, tier: 4, specials: ['slow', 'vampiric'],  biome: 'server', flavor: 'The cold keeps something fresh in there.' },
+  // the Drowned Archive (depth 50+)
+  { key: 'archivist', name: 'Drowned Archivist', glyph: 'q', color: '#3fbcb0', minDepth: 50, window: Infinity, hpMult: 1.2, atkMult: 1.4, defMult: 1, tier: 5, specials: ['ranged', 'summon'],          biome: 'archive', flavor: 'It files you under PENDING.' },
+  { key: 'siltchoir', name: 'Silt Choir',        glyph: '≋', color: '#4a8aa8', minDepth: 50, window: Infinity, hpMult: 2.4, atkMult: 1.3, defMult: 3, tier: 5, specials: ['slow', 'vampiric', 'armored'], biome: 'archive', flavor: 'A hymn with too many mouths.' },
+  // the Ossuary City (depth 100+)
+  { key: 'sexton',  name: 'Ossuary Sexton', glyph: '†', color: '#d8d0b8', minDepth: 100, window: Infinity, hpMult: 2.0, atkMult: 1.6, defMult: 4, tier: 6, specials: ['summon', 'armored'], biome: 'city', flavor: 'Still burying. Always room for one more.' },
+  { key: 'marrowtyrant', name: 'Marrow Tyrant', glyph: 'Ψ', color: '#ffb44e', minDepth: 100, window: Infinity, hpMult: 2.8, atkMult: 1.9, defMult: 3, tier: 6, specials: ['deadly', 'regen'],   biome: 'city', flavor: 'It taxes the dead. The rates are criminal.' },
 ];
 
 /** Def lookup across every spawn table (UI flavor, codex-to-be). */
 export function monsterDefByKey(key: string): MonsterDef | undefined {
-  return MONSTERS.find((m) => m.key === key) ?? SERVER_MONSTERS.find((m) => m.key === key);
+  return MONSTERS.find((m) => m.key === key) ?? BIOME_MONSTERS.find((m) => m.key === key);
 }
 
 export const BOSS_NAMES = [
@@ -99,14 +107,14 @@ export function bossName(depth: number): string {
   return `${cycle}, Reborn ${roman(aeon)}`;
 }
 
-export function eligibleMonsters(depth: number, biome?: 'server'): MonsterDef[] {
+export function eligibleMonsters(depth: number, biome?: BiomeId): MonsterDef[] {
   const list = MONSTERS.filter(
     (m) => depth >= m.minDepth && depth <= m.minDepth + m.window,
   );
   // Safety: never return empty (very deep floors fall back to open-window mobs).
   const base = list.length === 0 ? MONSTERS.filter((m) => m.window === Infinity) : list;
-  if (biome === 'server') {
-    return [...base, ...SERVER_MONSTERS.filter((m) => depth >= m.minDepth)];
+  if (biome) {
+    return [...base, ...BIOME_MONSTERS.filter((m) => m.biome === biome && depth >= m.minDepth)];
   }
   return base;
 }

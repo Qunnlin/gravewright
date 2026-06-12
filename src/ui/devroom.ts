@@ -5,7 +5,7 @@
  * regular game state — saves made while cheating are honestly cheated saves.
  */
 import type { Game } from '../core/game';
-import type { Slot } from '../core/types';
+import type { Floor, RunState, Slot } from '../core/types';
 import { bus, log } from '../core/events';
 import { spawnMonster, DEFAULT_MODS } from '../core/dungeon';
 import { rollItem } from '../core/data/items';
@@ -74,7 +74,9 @@ function render(): void {
       <button class="btn tiny" data-dev="spawn" data-id="boss">boss</button>
       <button class="btn tiny" data-dev="trial">trial next floor</button>
       <button class="btn tiny" data-dev="wrath">+1 wrath step</button>
-      <button class="btn tiny" data-dev="server">server room</button>
+      <button class="btn tiny" data-dev="biome" data-id="server">srv room</button>
+      <button class="btn tiny" data-dev="biome" data-id="archive">archive</button>
+      <button class="btn tiny" data-dev="biome" data-id="city">city</button>
     </div>
     <div class="dev-section"><b>Loot</b>
       <button class="btn tiny" data-dev="item" data-id="3">epic</button>
@@ -150,12 +152,14 @@ function handle(act: string, id: string): void {
     case 'wrath':
       s.soulsThisReap += 6000;
       break;
-    case 'server':
+    case 'biome':
       if (run) {
         // recolor this floor now; the streak (natives + loot) starts below
-        run.floor.biome = 'server';
+        run.floor.biome = id as Floor['biome'];
+        run.biomeId = id as RunState['biomeId'];
         run.biomeFloorsLeft = 3;
-        log('⚙ The racks hum: this floor recolored, the next 3 are full server room.', 'system');
+        run.biomeCooldown = 0;
+        log(`⚙ Biome forced: ${id} — this floor recolored, the next 3 are the full biome.`, 'system');
       }
       break;
     case 'item':

@@ -260,15 +260,15 @@ export function reforgeCost(toDepth: number): number {
  *  slow dimmer. Render palettes and the crossing murmur both key off this. */
 export const ATMOSPHERE_BANDS = [1, 12, 24, 36];
 
-/** The server room hums only this deep... */
-export const SERVER_ROOM_MIN_DEPTH = 13;
-/** ...with this chance to begin per eligible floor (never starts on boss or
- *  trial floors). An easter egg, not a destination — rare enough to be a story. */
-export const SERVER_ROOM_CHANCE = 0.05;
-/** Once entered, the racks go on for this many floors. */
-export const SERVER_ROOM_FLOORS = 3;
-/** Salvaged hardware: gold piles in the server room run this much richer. */
-export const SERVER_GOLD_MULT = 1.5;
+/** Biomes (defs + per-biome numbers in data/biomes.ts): a streak may begin
+ *  with this chance per eligible floor (never on boss or trial floors)... */
+export const BIOME_CHANCE = 0.05;
+/** ...runs for this many floors once entered... */
+export const BIOME_FLOORS = 3;
+/** ...and then the crypt stays honest stone for at least this many floors —
+ *  biomes are events, not wallpaper (playtest: "higher gaps"). Expected
+ *  spacing ≈ COOLDOWN + 1/CHANCE ≈ 60 floors between visits. */
+export const BIOME_COOLDOWN = 40;
 
 /** ---- dungeon population ---- */
 
