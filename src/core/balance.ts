@@ -76,8 +76,13 @@ export function xpForLevel(level: number): number {
   return Math.ceil(22 * Math.pow(1.42, level - 1));
 }
 
-/** Per-run level bonus: compounding on atk & hp. */
-export const LEVEL_STAT_MULT = 1.09;
+/** Per-run level bonus: compounding on atk & hp.
+ *  1.09->1.085 (bone-scaling phase 2): with ferocity's cost fixed, in-run
+ *  leveling was the remaining compounding leg keeping "hero outruns" true.
+ *  The planned 1.06 broke the frontier-threat gate and 1.075 broke the
+ *  wall gate - the level curve is load-bearing for post-reap depth, so it
+ *  only had a quarter-step of slack in it. */
+export const LEVEL_STAT_MULT = 1.085;
 
 /** Damage mitigation from defense: smooth, capped at 80%.
  *  Used for MONSTER defense (their def values already scale with depth). */
