@@ -129,6 +129,10 @@ function monsterTip(m: Monster): string {
   lines.push(`<span class='tip-name' style='color:${m.color}'>${esc(m.glyph)} ${esc(m.name)}</span>`);
   lines.push(`<span class='tip-sub'>${rank}${m.awake ? '' : ' · asleep'}</span>`);
   lines.push(`<span class='tip-affix'>HP ${fmt(Math.ceil(m.hp))} / ${fmt(m.maxHp)} · ATK ${fmt(Math.round(m.atk))} · DEF ${fmt(Math.round(m.def))}</span>`);
+  if (m.def > 0) {
+    const eHp = Math.round(m.maxHp / (1 - B.mitigation(m.def)));
+    lines.push(`<span class='tip-kind'>armored — takes ~${fmt(eHp)} raw damage to put down</span>`);
+  }
   for (const sp of m.specials) {
     lines.push(`<span class='tip-kind'>◦ ${esc(SPECIAL_NOTES[sp])}</span>`);
   }
@@ -149,6 +153,8 @@ function heroTip(): string {
   lines.push(`<span class='tip-name' style='color:${klass.glyphColor}'>@ ${esc(run.heroName)}</span>`);
   lines.push(`<span class='tip-sub'>${esc(klass.name)} · Lv ${run.level}</span>`);
   lines.push(`<span class='tip-affix'>HP ${fmt(Math.max(0, Math.ceil(run.hp)))} / ${fmt(d.maxHp)} · ATK ${fmt(Math.round(d.atk))} · DEF ${fmt(Math.round(d.def))}</span>`);
+  const eHp = B.heroEffectiveHp(d.maxHp, d.def, run.depth);
+  if (d.def > 0) lines.push(`<span class='tip-kind'>with armor: ${fmt(Math.ceil(Math.max(0, run.hp) * (eHp / d.maxHp)))} / ${fmt(Math.round(eHp))}</span>`);
   if (run.blessTurns > 0) lines.push(`<span class='tip-kind' style='color:#ffee88'>☩ Blessed — +25% damage, ${run.blessTurns} turns left</span>`);
   for (const st of run.statuses) {
     const label = st.kind === 'poison' ? 'Poisoned' : 'Burning';

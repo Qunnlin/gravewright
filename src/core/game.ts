@@ -820,7 +820,8 @@ export class Game {
           this.pushTrail();
           this.heroPos.x = step.x;
           this.heroPos.y = step.y;
-          this.enterTile(step.x, step.y);
+          // click-to-move counts as deliberate (full-health shrine use ok)
+          this.enterTile(step.x, step.y, this.state.run.manualTarget !== null);
         }
         acted = true;
       } else {
@@ -1075,8 +1076,10 @@ export class Game {
     return { x, y };
   }
 
-  /** Handle stepping onto a tile: loot, shrine, well. (Stairs require intent.) */
-  private enterTile(x: number, y: number): void {
+  /** Handle stepping onto a tile: loot, shrine, well. (Stairs require intent.)
+   *  `deliberate` = the player steered here (keys or click-to-move); the
+   *  autopilot wandering over a shrine at full health won't spend the gold. */
+  private enterTile(x: number, y: number, deliberate = false): void {
     const s = this.state;
     const run = s.run!;
     const floor = run.floor;
@@ -1107,11 +1110,13 @@ export class Game {
       floor.items = floor.items.filter((it) => !(it.x === x && it.y === y));
     }
 
-    // shrine
+    // shrine — deliberately walking here works even at full health (the
+    // blessing and the ritual count are worth the gold on their own);
+    // the autopilot still only drinks when hurt
     if (floor.tiles[i] === TILE.SHRINE && floor.shrine && !floor.shrine.used) {
       const cost = this.d.shrinesFree ? 0 : Math.ceil(
         B.shrineCost(run.depth) * (this.d.powers.includes('leastpriv') ? 0.5 : 1));
-      if (run.hp < this.d.maxHp && s.gold >= cost) {
+      if ((deliberate || run.hp < this.d.maxHp) && s.gold >= cost) {
         s.gold -= cost;
         run.hp = this.d.maxHp;
         run.blessTurns = B.BLESS_TURNS;
@@ -1903,7 +1908,7 @@ export class Game {
       this.pushTrail();
       this.heroPos.x = nx;
       this.heroPos.y = ny;
-      this.enterTile(nx, ny);
+      this.enterTile(nx, ny, true); // keyboard moves are deliberate
     }
     if (!this.state.run) return;
     if (this.state.run.blessTurns > 0) this.state.run.blessTurns--;

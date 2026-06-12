@@ -3,7 +3,7 @@
 import { TILE, type Floor } from '../core/types';
 import type { Game } from '../core/game';
 import { bus, type GameEvent } from '../core/events';
-import { ATMOSPHERE_BANDS } from '../core/balance';
+import { ATMOSPHERE_BANDS, mitigation } from '../core/balance';
 import { biomeById } from '../core/data/biomes';
 import { FLOOR_W, FLOOR_H } from '../core/dungeon';
 import { classById } from '../core/data/classes';
@@ -398,11 +398,21 @@ function drawEntities(): void {
     }
 
     if (m.hp < m.maxHp) {
+      // the bar shows effective HP: flesh in the threat color, the armor's
+      // contribution as a steel stretch after it (same scheme as the hero)
+      const armorFactor = 1 / (1 - mitigation(m.def));
+      const w = CELL - 4;
+      const flesh = Math.max(0, m.hp / (m.maxHp * armorFactor));
+      const armor = Math.min(1 - flesh, flesh * (armorFactor - 1));
       const frac = Math.max(0, m.hp / m.maxHp);
       ctx.fillStyle = '#000';
-      ctx.fillRect(m.x * CELL + 2, m.y * CELL - 2, CELL - 4, 3);
+      ctx.fillRect(m.x * CELL + 2, m.y * CELL - 2, w, 3);
       ctx.fillStyle = frac > 0.5 ? '#5fbb4f' : frac > 0.25 ? '#ccaa33' : '#cc3344';
-      ctx.fillRect(m.x * CELL + 2, m.y * CELL - 2, (CELL - 4) * frac, 3);
+      ctx.fillRect(m.x * CELL + 2, m.y * CELL - 2, w * flesh, 3);
+      if (armor > 0.01) {
+        ctx.fillStyle = '#717f95';
+        ctx.fillRect(m.x * CELL + 2 + w * flesh, m.y * CELL - 2, w * armor, 3);
+      }
     }
   }
 }

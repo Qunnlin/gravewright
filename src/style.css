@@ -339,6 +339,14 @@ main {
   background: linear-gradient(90deg, #6e1226, #c43050 70%, #e0556f);
   transition: width 0.15s;
 }
+/* what the armor adds to the pool: a steel stretch after the flesh */
+.bar .fill.armor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: linear-gradient(90deg, #4a5668, #717f95);
+  transition: width 0.15s, left 0.15s;
+}
 /* segment ticks over the hp bar */
 .bar.hp::after {
   content: '';
