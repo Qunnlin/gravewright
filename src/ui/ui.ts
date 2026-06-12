@@ -739,12 +739,14 @@ function itemTip(item: Item, compareWith?: Item | null): string {
       } else {
         lines.push(`<span class='tip-sub'>identical stats to ${esc(compareWith.name)}</span>`);
       }
-      const ds = Math.round(scoreItem(item) - scoreItem(compareWith));
+      // favored-aware: the same scorer auto-equip uses, so this verdict can
+      // never contradict the autopilot's decision (audit finding)
+      const ds = Math.round(game.effScore(item, curClassId()) - game.effScore(compareWith, curClassId()));
       lines.push(`<span class='${ds >= 0 ? 'tip-diff-up' : 'tip-diff-down'}'>overall ${ds >= 0 ? '▲ better' : '▼ worse'} (score ${ds >= 0 ? '+' : ''}${ds})</span>`);
     }
   }
 
-  lines.push(`<span class='tip-salvage'>⚒ salvages for ${fmt(B.SALVAGE_GOLD_BY_RARITY[item.rarity])} gold</span>`);
+  lines.push(`<span class='tip-salvage'>⚒ salvages for ${fmt(game.salvageValue(item))} gold</span>`);
   return attrSafe(lines.join('<br>'));
 }
 
@@ -803,7 +805,7 @@ function satchelSection(): string {
               data-tip="${usable ? 'Equip (swaps with the current item)' : esc(`This vessel cannot wield ${WEAPON_KINDS[item.kind!]?.label ?? 'this'} weapons.`)}">equip</button>
             ${reforgeBtn(item, 'inv-reforge', String(idx))}
             <button class="btn tiny danger" data-act="inv-salvage" data-id="${idx}" data-name="${esc(item.name)}"
-              data-tip="Scrap for ${fmt(B.SALVAGE_GOLD_BY_RARITY[item.rarity])} gold">⚒</button>
+              data-tip="Scrap for ${fmt(game.salvageValue(item))} gold">⚒</button>
           </span>
         </div>
         <div class="inv-statline">${describeItem(item).join(' · ')}</div>

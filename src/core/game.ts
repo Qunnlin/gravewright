@@ -809,15 +809,7 @@ export class Game {
     // status effects
     if (this.tickStatuses()) return; // died to dot
 
-    // regen
-    const klass = classById(run.klass);
-    let regen = this.d.regen + (klass.regen ? this.d.maxHp * klass.regen / 100 : 0);
-    if (this.d.powers.includes('unbroken') && run.hp < this.d.maxHp / 2) {
-      regen += this.d.maxHp * 0.015; // Bastion of the Ninth Vault
-    }
-    if (regen > 0 && run.hp < this.d.maxHp) {
-      run.hp = Math.min(this.d.maxHp, run.hp + regen);
-    }
+    this.applyRegen();
 
     const dist = bfsMap(floor, hx, hy);
 
@@ -872,6 +864,23 @@ export class Game {
     if (this.state.run) {
       this.trialTick();
       this.checkLevelUp();
+    }
+  }
+
+  /** Per-turn regeneration: gear flat regen + class %-regen + the Unbroken
+   *  power. One application per hero TURN — heroAct (autopilot and
+   *  click-to-move) and manualMove (keyboard) both count as turns; the
+   *  keyboard path silently skipped this until the equipment audit. */
+  private applyRegen(): void {
+    const run = this.state.run;
+    if (!run) return;
+    const klass = classById(run.klass);
+    let regen = this.d.regen + (klass.regen ? this.d.maxHp * klass.regen / 100 : 0);
+    if (this.d.powers.includes('unbroken') && run.hp < this.d.maxHp / 2) {
+      regen += this.d.maxHp * 0.015; // Bastion of the Ninth Vault
+    }
+    if (regen > 0 && run.hp < this.d.maxHp) {
+      run.hp = Math.min(this.d.maxHp, run.hp + regen);
     }
   }
 
@@ -1228,7 +1237,7 @@ export class Game {
   }
 
   /** Effective comparison score: a favored weapon counts its bonus ATK. */
-  private effScore(item: Item, classId: string): number {
+  effScore(item: Item, classId: string): number {
     let score = scoreItem(item);
     if (item.slot === 'weapon' && item.kind && kindFavors(item.kind, classId)) {
       score += (item.stats.atk ?? 0) * 2 * (FAVORED_WEAPON_MULT - 1);
@@ -1245,9 +1254,7 @@ export class Game {
   /** Salvage value is fixed (no gold multipliers) but still honors curse
    *  multipliers — under Famine, "no gold drops anywhere" includes salvage. */
   private salvageItem(item: Item, silent = false): number {
-    const midas = this.d.powers.includes('midas') ? 3 : 1;
-    const v = this.gainGold(
-      B.SALVAGE_GOLD_BY_RARITY[item.rarity] * midas * this.curseMult('goldMult'), true);
+    const v = this.gainGold(this.salvageValue(item), true);
     if (!silent) log(`Salvaged ${item.name} (+${fmt(v)} gold).`, 'item');
     return v;
   }
@@ -1428,6 +1435,15 @@ export class Game {
     this.state.inventory[index] = reforged;
     bus.emit({ type: 'dirty' });
     return true;
+  }
+
+  /** The gold a salvage would actually pay right now: flat-by-rarity, times
+   *  Midas Scrap, times curse gold multipliers (Famine pays zero). The UI
+   *  must quote THIS, not the raw table (audit finding). */
+  salvageValue(item: Item): number {
+    const midas = this.d.powers.includes('midas') ? 3 : 1;
+    return Math.round(B.SALVAGE_GOLD_BY_RARITY[item.rarity] * midas *
+      this.curseMult('goldMult'));
   }
 
   /** Toggle the player lock on an equipped item (needs the Quartermaster's Seal). */
@@ -1947,6 +1963,7 @@ export class Game {
 
     run.turn++;
     if (this.tickStatuses()) return;
+    this.applyRegen();
 
     const m = run.floor.monsters.find((mm) => mm.x === nx && mm.y === ny && mm.hp > 0);
     if (m) {

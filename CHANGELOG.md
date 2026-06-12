@@ -11,6 +11,24 @@ and bumps `src/core/version.ts` + `package.json`.
 
 ### Added
 
+- Equipment audit instrumentation: `test/equipment-audit.spec.ts` prints
+  rarity-throughput, weapon-kind and Vestige-vs-legendary tables and pins
+  the invariants (slot legality, caps, monotonic rarity power, the Vestige
+  weapon/armor primary promise); `test/affixes.spec.ts` pins every affix's
+  exact wiring. (#36)
+
+### Fixed
+
+- Regeneration (gear, class, Unbroken) now applies on keyboard turns —
+  `manualMove` ticked DoTs and monsters but silently skipped regen. (#36)
+- The item-comparison tooltip's "overall better/worse" verdict now uses the
+  favored-weapon-aware scorer (same as auto-equip), so it can no longer
+  contradict the autopilot. (#36)
+- Salvage tooltips quote the actual payout — including Midas Scrap ×3 and
+  the Famine pact's ×0 — via a single `salvageValue()` source of truth. (#36)
+
+### Added
+
 - Automatic tags & releases on both remotes: every version bump that lands
   on `main` is tagged `vX.Y.Z` by CI; minor and major versions also get a
   GitHub Release with their changelog section as notes. The GitLab mirror
