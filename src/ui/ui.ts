@@ -20,6 +20,7 @@ import {
 } from '../core/data/items';
 import type { Affix, WeaponKind } from '../core/types';
 import { SAVE_KEY, encodeSave, decodeSave, hardReset, lockSaves, saveGame } from '../core/save';
+import { GAME_VERSION } from '../core/version';
 import { playSound } from './sound';
 import { resetTutorial } from './tutorial';
 
@@ -1285,6 +1286,7 @@ function panelSettings(): string {
       ? toggle('Bone Automaton (auto-buy Crypt)', s.settings.autoBuyBones, 'toggle-autobuy')
       : ''}
     <h3>Ledger</h3>
+    <div class="setting-row" data-tip="The game's version — see CHANGELOG.md for what each release brought."><span>Version</span><b>v${GAME_VERSION}</b></div>
     <div class="setting-row"><span>Autosaves every 15s</span>
       <button class="btn" data-act="save-now">Save now</button></div>
     <textarea id="save-io" rows="4" spellcheck="false" placeholder="Exported saves appear here; paste one to import."></textarea>
@@ -1313,7 +1315,7 @@ function panelSettings(): string {
       <div class="stat"><span>Trials won</span><b>${fmt(s.trialsWon)}</b></div>
       <div class="stat"><span>Trials lost</span><b>${fmt(s.trialsFailed)}</b></div>
     </div>
-    <div class="about">GRAVEWRIGHT v1.0 — an incremental necromancy roguelike.<br>
+    <div class="about">GRAVEWRIGHT v${GAME_VERSION} — an incremental necromancy roguelike.<br>
     Keys: WASD/arrows seize manual control · <b>Space</b> descend on ▼ · <b>P</b> toggle autopilot · click map to send the vessel.</div>
   `;
 }
