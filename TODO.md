@@ -47,6 +47,29 @@ into the next version's notes.
 - [ ] **(P2, M) More gold sinks** — gold piles up mid-run with little to do.
   Candidates: in-run gambler/peddler, shrine re-rolls, and the item-raising
   service below.
+- [ ] **(P1, L) EQUIPMENT REEVALUATION — audit first, then cool affixes.**
+  Three questions, in order. (a) *Correctness:* does every affix do exactly
+  what its tooltip claims? Trace each AFFIX_DEFS entry end-to-end through
+  recalc()/combat (regen, lifesteal, dodge, crit, hpPct, gold/soul/xp/bone
+  pct) and pin each with a unit test. (b) *Weapon-kind balance:* blade/
+  heavy/polearm/bow/focus — favor bonuses + class gating: is any kind
+  strictly dominant for its classes? (c) *Rarity budgets:* does the
+  ×(1+0.45·rarity) curve (legendary ×1.35) match the felt power deltas?
+  *Instrument: an audit spec that rolls N items per kind/rarity/depth and
+  prints stat-contribution tables + robot win-rate deltas; findings report
+  → targeted fixes.* THEN the fun part — new affixes (absorbs the old
+  "more item modifiers" entry): on-kill gold burst, shrine discount,
+  +trial souls, minion lifesteal, thorns, status-duration reduction, plus
+  fresh ideas (ward-weave +def%, soul-on-crit, echo strike).
+- [ ] **(P1, M) VESTIGE STAT REPORT & possible rework** — set pieces roll a
+  FIXED 2–3-affix table at budget ×5 (SET_BUDGET_MULT) plus a named power,
+  where legendaries roll more and varied lines — "fewer enchantments" may
+  no longer be the right trade. *Report first: per piece at reference
+  depths, effective total budget vs the mean legendary/mythic of the same
+  slot; is the narrowness still attractive late; does ×5 + the power
+  justify it; do reforges keep pace. Then decide the rework with the data:
+  secondary random rolls on pieces, broader fixed tables, or budget
+  retune.*
 - [ ] **(P2, M) Loot goblin** — ultra-rare special spawn, distinct look, tries
   to FLEE (new AI: run away from hero), drops a Vestige (or big loot) when
   caught. *Flee AI = step uphill on the hero BFS field; despawn after N turns.*
@@ -56,9 +79,6 @@ into the next version's notes.
 - [ ] **(P2, M) Player damage-over-time: burn/poison/bleed** — dot-inflicting
   weapon affixes. *Needs monster statuses (they currently have none): add
   `statuses: Status[]` to Monster, tick in monstersAct.*
-- [ ] **(P2, M) More item modifiers** — on-kill gold burst, shrine discount,
-  +trial souls, minion lifesteal, thorns, status-duration reduction. *Each:
-  AFFIX_DEFS entry + scoreItem weight + recalc/combat hook + tooltip label.*
 - [ ] **(P3, M) Lower classes less obsolete late game** — gather ideas:
   class mastery bonuses for vessels summoned N times, per-class feats,
   class-specific set interactions.
