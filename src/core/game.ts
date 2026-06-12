@@ -1470,7 +1470,7 @@ export class Game {
       const dist = Math.abs(m.x - this.heroPos.x) + Math.abs(m.y - this.heroPos.y);
       if (dist <= 1 && !this.devInvulnerable) {
         const blast = Math.max(1,
-          B.monsterAtk(run.depth) * 1.6 * (1 - B.heroMitigation(this.d.def, run.depth)));
+          B.heroDamageAfterDef(B.monsterAtk(run.depth) * 1.6, this.d.def));
         run.hp -= blast;
         bus.emit({ type: 'shake', power: 5 });
         bus.emit({ type: 'sound', name: 'hurt' });
@@ -1777,7 +1777,7 @@ export class Game {
     let raw = m.atk * rndf(1 - B.DMG_VARIANCE, 1 + B.DMG_VARIANCE);
     if (m.specials.includes('deadly') && chance(0.2)) raw *= 2;
 
-    let dmg = Math.max(1, raw * (1 - B.heroMitigation(d.def, run.depth)));
+    let dmg = Math.max(1, B.heroDamageAfterDef(raw, d.def));
     dmg *= 1 - d.blockPct / 100;
     dmg = Math.max(1, dmg);
 

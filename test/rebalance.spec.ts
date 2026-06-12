@@ -6,28 +6,24 @@ import { seedRng } from '../src/core/rng';
 import { bus } from '../src/core/events';
 import * as B from '../src/core/balance';
 
-describe('hero mitigation scales with depth', () => {
-  it('the same defense protects less the deeper you stand', () => {
-    const def = 100;
-    const shallow = B.heroMitigation(def, 1);
-    const mid = B.heroMitigation(def, 10);
-    const deep = B.heroMitigation(def, 30);
-    expect(shallow).toBeGreaterThan(mid);
-    expect(mid).toBeGreaterThan(deep);
-    // depth 1 behaves close to the old fixed-35 pivot, scaled by the asymptote
-    expect(shallow).toBeCloseTo(B.HERO_MITIGATION_MAX * (100 / 131), 5);
+describe('hero defense: flat soak, capped per hit', () => {
+  it('soaks exactly def below the cap, and the cap share above it', () => {
+    // small hit, big armor: the cap binds — 25% always gets through
+    expect(B.heroDamageAfterDef(100, 1e6)).toBeCloseTo(100 * (1 - B.DEF_SOAK_CAP));
+    // big hit, small armor: flat soak binds — damage = raw − def
+    expect(B.heroDamageAfterDef(1000, 100)).toBe(900);
+    // zero armor: full damage
+    expect(B.heroDamageAfterDef(123, 0)).toBe(123);
   });
 
-  it('approaches HERO_MITIGATION_MAX but never gets stuck at a hard cap', () => {
-    for (const depth of [1, 10, 50, 200]) {
-      expect(B.heroMitigation(0, depth)).toBe(0);
-      expect(B.heroMitigation(1e12, depth)).toBeLessThan(B.HERO_MITIGATION_MAX);
-      // the old hard clamp made marginal DEF worthless past 4*pivot;
-      // now every point of DEF strictly improves mitigation
-      const pivotCap = 4 * (25 + 6 * depth);
-      expect(B.heroMitigation(pivotCap + 1000, depth))
-        .toBeGreaterThan(B.heroMitigation(pivotCap, depth));
-    }
+  it('every point of DEF helps until the cap, and depth dilutes the share', () => {
+    // below the cap line, +1 def = exactly −1 damage (maximal legibility)
+    expect(B.heroDamageAfterDef(1000, 101)).toBe(B.heroDamageAfterDef(1000, 100) - 1);
+    // the same armor soaks a smaller SHARE of a deeper monster's swing
+    const def = 100;
+    const shallowShare = 1 - B.heroDamageAfterDef(B.monsterAtk(5), def) / B.monsterAtk(5);
+    const deepShare = 1 - B.heroDamageAfterDef(B.monsterAtk(30), def) / B.monsterAtk(30);
+    expect(deepShare).toBeLessThan(shallowShare);
   });
 
   it('monster mitigation is unchanged (fixed pivot)', () => {
