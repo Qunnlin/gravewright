@@ -1,6 +1,6 @@
 # GRAVEWRIGHT — idea backlog
 
-Curated from playtests (last update 2026-06-11). **Effort**: S (under half a
+Curated from playtests (last update 2026-06-12). **Effort**: S (under half a
 session) · M (a session) · L (multiple sessions) · XL (epic). **Priority**: P1
 (next up) · P2 (soon) · P3 (someday). Within each group, sorted by priority,
 then effort. Notes in *italics* are implementation thoughts for whoever (or
@@ -85,24 +85,21 @@ how-tos and `CLAUDE.md` for the contribution rules.
   cost growth 2.5→1.9 — the endgame frontier should live in the hundreds.
 - [x] Autopilot speed slider (PR #10): Settings range 25–100% of the
   unlocked action rate; persisted, applies to autopilot and click-to-move.
-
-## Bugs (playtest 2026-06-12)
-
-- [ ] **(P1, S) "Relics found 90/15" in Statistics** — `relicsFound` is a
-  LIFETIME drop counter (persists through reaps) but the panel renders it
-  over the catalog size `RELICS.length`. *Either split the stat ("Relics
-  claimed (lifetime)" + "Distinct discovered X/15" via a persistent id set —
-  extend mergeState + save.spec) or just relabel. ui.ts panelSettings.*
-- [ ] **(P1, S) Boss aeon numerals: "Reborn IIIII" instead of "Reborn V"** —
-  `bossName()` uses `'I'.repeat(min(aeon,5))`. *Write a tiny roman() helper
-  in data/monsters.ts (handles V/X/L at least; drop the cap of 5), add a
-  deep-depth name test in dungeon.spec.*
-- [ ] **(P1, S) Speed slider feels unresponsive + hidden** — root cause:
-  `setInterval(renderPanel, 1000)` in ui.ts rebuilds the Settings panel
-  mid-drag and yanks the thumb. *Move the slider out of the re-rendered
-  panel onto the main screen — next to the AUTO button in the topbar, or in
-  the Doctrine row of the Vessel tab — rendered once and updated in place;
-  skip panel re-render while a slider is being dragged as belt-and-braces.*
+- [x] Playtest bugfixes (PR #13): distinct-relics stat (90/15 fixed), roman
+  boss aeons (Reborn V, not IIIII), speed slider moved to the topbar (the 1s
+  panel re-render was yanking the thumb mid-drag) — now auto-mode-only (#16).
+- [x] DEFENSE, FINAL MODEL (PR #16, design by Qunnlin; supersedes the flat
+  soak of #14): reduction = def/(def+K) with K = 1.5·monsterAtk(depth)
+  (scale-invariant), 1% per-hit damage floor (no immortality), UI shows
+  Effective HP + hits-to-die (never %), Grave Aegis essence upgrade
+  completes defense = base × mult × prestigeMult.
+- [x] Biome eras (PR #15): 40-floor cooldown between 3-floor streaks
+  (~60-floor spacing); the Drowned Archive (depth 50+, bones ×1.75) and
+  the Ossuary City (depth 100+, gold/bones ×1.4, Reliquary urns) join the
+  server room; all biome data generalized into data/biomes.ts.
+- [x] QoL batch (PR #17): bless 25→40 / poison 4→7 / burn 3→5 turns (now
+  in balance.ts), Settings deduped (loot automation lives in the Satchel
+  bar), CRT filter ON by default.
 
 ## Quick wins (S effort, mostly QoL)
 
@@ -131,32 +128,6 @@ how-tos and `CLAUDE.md` for the contribution rules.
   monster curves / income growth / wrath slope / item budgets until the
   frontier stays lethal at every stage. Tie in the trial overhaul as the
   intended hard content.*
-- [ ] **(P1, L) DEFENSE, FROM ZERO — design-first reevaluation.** Third round
-  of defense feedback (fixed pivot → depth pivot → asymptote) and it still
-  doesn't feel right: spending souls/bones on DEF reads as wasted. Start
-  from the player promise — "every DEF purchase visibly extends survival" —
-  and pick a model deliberately, not incrementally. Candidate models to
-  evaluate: (a) current asymptotic % reduction (PoE-armour-like; weakness:
-  % gains shrink invisibly); (b) the playtest idea — FLAT damage reduction
-  per hit, capped at a % of the hit (reads concretely: "each hit −37, up to
-  75%"; flat numbers scale legibly with purchases); (c) block pool /
-  plate-HP that absorbs and regenerates between fights (Slay-the-Spire-ish,
-  very visible); (d) layered: flat soak (gear) + % mitigation (upgrades)
-  with separate readouts. *Approach: short design doc comparing the models
-  against GRAVEWRIGHT's loops (exponential curves, death-as-income — note
-  defense here delays a PAYDAY, which is unusual and may be why it feels
-  bad: consider letting DEF also add a survival-time soul bonus). Prototype
-  the winner behind the balance report (deaths/hour + TTK curves must stay
-  in band), then a feel-pass.*
-- [ ] **(P2, M) Biome spacing & depth eras** — playtest: biomes should be
-  rarer events with bigger presence. Raise the gap between server-room
-  visits (cooldown floors after a streak, chance down), and introduce a NEW
-  biome theme roughly every 50–100 depths now that Deep Memory carries
-  starts into the hundreds (candidates: the Drowned Archive ~50, the
-  Ossuary City ~100, the Void Garden ~150 — each with palette, 2–3 natives,
-  a loot hook, entry omen). *Infra exists: Floor.biome, biomeFloorsLeft
-  streaks, SERVER_MONSTERS pattern, BAND_COLORS palettes; mostly data +
-  balance constants per biome.*
 - [ ] **(P2, M) More essence sinks** — e.g. *very slightly* increased trial
   and unique-drop chances, very expensive, carefully balanced. *New essence
   upgrades with tiny eff values; cap levels hard.*
