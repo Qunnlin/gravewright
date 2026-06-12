@@ -356,7 +356,7 @@ export function genFloor(
   // --- the Peddler: mystery wares for gold (v1.4.0 gold sink) ---
   if (!isBossFloor && chance(PEDDLER_CHANCE)) {
     const spot = freeTile(floor, taken);
-    floor.peddler = { ...spot, stock: PEDDLER_STOCK };
+    floor.peddler = { ...spot, stock: PEDDLER_STOCK, autoBought: 0, spotted: false };
     tiles[idx(spot.x, spot.y)] = TILE.PEDDLER;
   }
 

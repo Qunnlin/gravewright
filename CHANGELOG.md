@@ -9,6 +9,17 @@ and bumps `src/core/version.ts` + `package.json`.
 
 ## [Unreleased]
 
+## [1.4.1] — 2026-06-13
+
+### Fixed
+
+- **The Peddler existed only for manual players** — autopilot runs (the
+  dominant mode) walked straight past him. Two completions: a one-time
+  sighting line in the ledger when his stall enters view, and a standing
+  order (Settings → "Auto-peddler"): *walk past* (default), *buy one* per
+  floor, or *buy him out* — funds permitting; the autopilot routes to the
+  stall like it routes to shrines. Deliberate visits always buy. (#40)
+
 ## [1.4.0] — 2026-06-12 · The Price of Everything
 
 ### Added

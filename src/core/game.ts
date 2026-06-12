@@ -85,6 +85,7 @@ export function defaultState(): GameState {
       logCombat: true, logLoot: true, logSystem: true,
       autoSpeed: 1,
       trialAuto: 'ask',
+      peddlerAuto: 'ignore',
     },
   };
 }
@@ -815,6 +816,13 @@ export class Game {
 
     this.applyRegen();
 
+    // the Peddler announces himself once his stall is sighted
+    if (floor.peddler && !floor.peddler.spotted &&
+        floor.seen[floor.peddler.y * floor.w + floor.peddler.x]) {
+      floor.peddler.spotted = true;
+      log('⚖ A peddler has set up on this floor. His prices double per sale.', 'gold');
+    }
+
     const dist = bfsMap(floor, hx, hy);
 
     let acted = false;
@@ -991,6 +999,20 @@ export class Game {
       const step = this.firstStep(dist, shrine.x, shrine.y);
       if (step) {
         this.goal = 'Seeking the shrine';
+        return step;
+      }
+    }
+
+    // the Peddler, under a standing order and with the gold to honor it
+    const pd = floor.peddler;
+    if (pd && pd.stock > 0 && this.state.settings.peddlerAuto !== 'ignore' &&
+        floor.seen[pd.y * floor.w + pd.x] &&
+        (this.state.settings.peddlerAuto === 'all' || pd.autoBought < 1) &&
+        this.state.gold >= Math.ceil(B.goldPile(run.depth) * B.PEDDLER_PRICE_PILES *
+          Math.pow(2, B.PEDDLER_STOCK - pd.stock))) {
+      const step = this.firstStep(dist, pd.x, pd.y);
+      if (step) {
+        this.goal = 'Visiting the Peddler';
         return step;
       }
     }
@@ -1197,15 +1219,21 @@ export class Game {
       }
     }
 
-    // the Peddler: mystery wares, cash up front (deliberate visits only)
+    // the Peddler: mystery wares, cash up front. Deliberate visits always
+    // buy; the autopilot buys only under a standing order (and 'one'
+    // means one per floor)
+    const order = s.settings.peddlerAuto;
+    const autoBuys = !deliberate && order !== 'ignore' &&
+      (order === 'all' || (floor.peddler?.autoBought ?? 1) < 1);
     if (floor.tiles[i] === TILE.PEDDLER && floor.peddler &&
-        floor.peddler.stock > 0 && deliberate) {
+        floor.peddler.stock > 0 && (deliberate || autoBuys)) {
       const pd = floor.peddler;
       const price = Math.ceil(B.goldPile(run.depth) * B.PEDDLER_PRICE_PILES *
         Math.pow(2, B.PEDDLER_STOCK - pd.stock));
       if (s.gold >= price) {
         s.gold -= price;
         pd.stock--;
+        if (!deliberate) pd.autoBought++;
         const minRarity = chance(B.PEDDLER_LEGENDARY_CHANCE) ? 5 : 3;
         this.acquireItem(rollItem(run.depth, minRarity, run.klass));
         bus.emit({ type: 'sound', name: 'chest' });
