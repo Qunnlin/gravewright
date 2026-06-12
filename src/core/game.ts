@@ -80,6 +80,7 @@ export function defaultState(): GameState {
       buyAmount: 1, autoMend: false, protectVestiges: true, ravenousActive: true,
       crtFilter: false,
       logCombat: true, logLoot: true, logSystem: true,
+      autoSpeed: 1,
     },
   };
 }
@@ -688,7 +689,9 @@ export class Game {
       }
     } else if (s.auto || s.run.manualTarget) {
       this.actAcc += dtMs;
-      const per = 1000 / this.d.tickRate;
+      // the speed slider throttles the autopilot below the unlocked rate —
+      // you bought the speed, you choose how much of it to watch
+      const per = 1000 / (this.d.tickRate * s.settings.autoSpeed);
       let guard = 30;
       while (this.actAcc >= per && this.state.run && guard-- > 0) {
         this.actAcc -= per;

@@ -876,6 +876,11 @@ main {
   padding: 5px 0;
 }
 
+#auto-speed {
+  width: 130px;
+  accent-color: var(--accent);
+}
+
 #save-io {
   width: 100%;
   background: var(--bg);

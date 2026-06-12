@@ -143,6 +143,8 @@ function mergeState(loaded: Partial<GameState>): GameState {
   st.logCombat = st.logCombat !== false;
   st.logLoot = st.logLoot !== false;
   st.logSystem = st.logSystem !== false;
+  st.autoSpeed = num(st.autoSpeed)
+    ? Math.min(1, Math.max(0.25, st.autoSpeed)) : 1;
 
   merged.trialPending = merged.trialPending === true;
 

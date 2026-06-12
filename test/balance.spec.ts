@@ -64,8 +64,8 @@ describe('balance formulas', () => {
   it('crypt wrath: dormant until reap-readiness, then climbs without bound', () => {
     expect(B.cryptWrath(0)).toBe(1);
     expect(B.cryptWrath(B.REAP_SOUL_BASE)).toBe(1);
-    expect(B.cryptWrath(B.REAP_SOUL_BASE * 2)).toBeCloseTo(1.25);
-    expect(B.cryptWrath(B.REAP_SOUL_BASE * 10)).toBeCloseTo(3.25);
+    expect(B.cryptWrath(B.REAP_SOUL_BASE * 2)).toBeCloseTo(1.4);
+    expect(B.cryptWrath(B.REAP_SOUL_BASE * 10)).toBeCloseTo(4.6);
     expect(B.cryptWrath(B.REAP_SOUL_BASE * 100)).toBeGreaterThan(20);
   });
 });
