@@ -9,6 +9,7 @@ import { showTipAt, hideTip } from './tooltip';
 import { modalOpen } from './ui';
 import { SPECIAL_NOTES, monsterDefByKey } from '../core/data/monsters';
 import { biomeById } from '../core/data/biomes';
+import { wareById } from '../core/data/peddler';
 import { enchantById } from '../core/data/enchants';
 import { classById } from '../core/data/classes';
 import { fmt } from '../core/format';
@@ -182,12 +183,15 @@ function tileTip(floor: Floor, t: number, vis: boolean): string | null {
         ? `<span class='tip-name' style='color:#3a2a55'>◈ The spent altar</span><br><span class='tip-sub'>the Hall has already made its wager</span>` + fog
         : `<span class='tip-name rainbow-text'>◈ The Sealed Hall</span><br><span class='tip-sub'>step here to hear the wager: survive the onslaught for a Vestige — or forfeit souls</span>` + fog;
     case TILE.PEDDLER: {
-      if (!floor.peddler || floor.peddler.stock === 0) {
+      const pd = floor.peddler;
+      if (!pd || pd.wares.length === 0) {
         return `<span class='tip-name' style='color:#4a4658'>⚖ The Peddler</span><br><span class='tip-sub'>sold out — he no longer meets your eye</span>` + fog;
       }
-      const price = Math.ceil(B.goldPile(floor.depth) * B.PEDDLER_PRICE_PILES *
-        Math.pow(2, B.PEDDLER_STOCK - floor.peddler.stock));
-      return `<span class='tip-name' style='color:#ffcf66'>⚖ The Peddler</span><br><span class='tip-sub'>a mystery item (epic or better), wrapped and final — ⛁ ${fmt(price)} gold · ${floor.peddler.stock} left</span>` + fog;
+      const lines = pd.wares.map((w) => {
+        const def = wareById(w)!;
+        return `<span class='tip-kind'>${esc(def.name)} — ⛁ ${fmt(game.warePrice(def, pd))}</span>`;
+      }).join('<br>');
+      return `<span class='tip-name' style='color:#ffcf66'>⚖ The Peddler</span><br><span class='tip-sub'>step here deliberately to browse — prices double per sale</span><br>${lines}` + fog;
     }
     case TILE.VAULT:
       return `<span class='tip-name' style='color:#c4a5ff'>◆ The Vault</span><br><span class='tip-sub'>a sealed treasure room; its Warden guards the hoard</span>` + fog;

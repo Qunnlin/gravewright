@@ -8,8 +8,9 @@ import {
   monsterAtk, monsterCount, monsterDef, monsterHp, monsterXp,
 } from './balance';
 import { SPECIAL_MONSTERS, bossName, eligibleMonsters } from './data/monsters';
+import { WARES } from './data/peddler';
 import { ENCHANTS, WARDEN_NAMES } from './data/enchants';
-import { chance, pick, pickWeighted, rndInt, rndf, shuffle } from './rng';
+import { chance, pick, pickWeighted, rndInt, rndf, shuffle, sideRnd } from './rng';
 
 export const FLOOR_W = 48;
 export const FLOOR_H = 27;
@@ -356,7 +357,21 @@ export function genFloor(
   // --- the Peddler: mystery wares for gold (v1.4.0 gold sink) ---
   if (!isBossFloor && chance(PEDDLER_CHANCE)) {
     const spot = freeTile(floor, taken);
-    floor.peddler = { ...spot, stock: PEDDLER_STOCK, autoBought: 0, spotted: false };
+    // which trio he carries comes from ONE side-draw — ware selection must
+    // not advance the seeded gameplay stream (balance runs replay exactly)
+    const ids = WARES.map((w) => w.id);
+    const combos: number[][] = [];
+    for (let a = 0; a < ids.length; a++) {
+      for (let b = a + 1; b < ids.length; b++) {
+        for (let c = b + 1; c < ids.length; c++) combos.push([a, b, c]);
+      }
+    }
+    const trio = combos[Math.min(combos.length - 1, Math.floor(sideRnd() * combos.length))];
+    floor.peddler = {
+      ...spot,
+      wares: trio.map((i) => ids[i]),
+      bought: 0, autoBought: 0, spotted: false,
+    };
     tiles[idx(spot.x, spot.y)] = TILE.PEDDLER;
   }
 

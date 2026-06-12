@@ -113,10 +113,10 @@ export interface Floor {
   vault: { x: number; y: number; w: number; h: number } | null;
   /** Trial shrine of the Sealed Hall (boss-rush wager). */
   trial: { x: number; y: number; used: boolean } | null;
-  /** the Peddler: mystery wares for gold, stock dwindles (v1.4.0);
-   *  autoBought tracks the autopilot's standing-order purchases,
-   *  spotted gates the one-time sighting log */
-  peddler: { x: number; y: number; stock: number; autoBought: number; spotted: boolean } | null;
+  /** the Peddler (v1.4.0, wares v1.5.0): three distinct ware ids on
+   *  offer, bought = purchases made here (prices double per purchase);
+   *  autoBought tracks standing-order buys, spotted gates the sighting log */
+  peddler: { x: number; y: number; wares: string[]; bought: number; autoBought: number; spotted: boolean } | null;
   /** transient: the offer modal was already shown this visit */
   trialOffered?: boolean;
   floorTileCount: number;
@@ -182,6 +182,15 @@ export interface RunState {
   biomeCooldown: number;
   /** turn of the last direct hit taken (genuWall's Stateful power) */
   lastHitTurn: number;
+  /** Peddler curios, all run-scoped (never persisted): */
+  /** the Grave Compass — stairs always known */
+  compass: boolean;
+  /** Lantern Oil — bonus vision */
+  visionBonus: number;
+  /** Goblin Musk — force a Loot Goblin on the next generated floor */
+  goblinLure: boolean;
+  /** Sealed Draughts held — auto-drink when a hit leaves hp < 25% */
+  flasks: number;
 }
 
 export interface MinionState {

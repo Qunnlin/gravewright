@@ -338,7 +338,7 @@ function drawFloor(): void {
           const spent =
             (t === TILE.SHRINE && floor.shrine?.used) ||
             (t === TILE.WELL && floor.well?.used) ||
-            (t === TILE.PEDDLER && floor.peddler?.stock === 0);
+            (t === TILE.PEDDLER && floor.peddler?.wares.length === 0);
           if (spent) {
             ctx.fillStyle = vis ? '#4a4658' : '#2a2734';
           } else {

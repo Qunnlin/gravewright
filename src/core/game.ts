@@ -4,7 +4,7 @@
  */
 
 import {
-  TILE,
+  TILE, type Floor,
   type Derived, type GameState, type Gear, type Item, type MinionState,
   type Monster, type RunState, type Slot, type Status, type StatusKind,
   type Strategy,
@@ -12,10 +12,12 @@ import {
 import * as B from './balance';
 import { bus, log } from './events';
 import { chance, pick, rndf, rndInt, sideRnd } from './rng';
+import { wareById, type WareDef } from './data/peddler';
 import { BIOMES, biomeById, type BiomeId } from './data/biomes';
 import {
   DEFAULT_MODS, bfsMap, computeFov, genFloor, genTrialHall, isPassable,
-  losClear, nearestWhere, spawnLesser, spawnMonster, type GenMods,
+  losClear, nearestWhere, spawnLesser, spawnLootGoblin, spawnMonster,
+  type GenMods,
 } from './dungeon';
 import { rollSetPiece, setById, trialSetFor } from './data/sets';
 import { CLASSES, classById } from './data/classes';
@@ -218,7 +220,7 @@ export class Game {
         relics.reduce((b, r) => b + (r!.crit ?? 0), 0) + gearStat('crit') +
         (powers.includes('deadeye') ? 20 : 0)),
       critDmg: watch2 ? 2.4 : B.HERO_BASE_CRITDMG,
-      vision: Math.min(12,
+      vision: (s.run?.visionBonus ?? 0) + Math.min(12,
         B.HERO_BASE_VISION + this.eff('insight') +
         relics.reduce((b, r) => b + (r!.vision ?? 0), 0)),
       tickRate:
@@ -392,6 +394,10 @@ export class Game {
       biomeId: biomeState.biomeId,
       biomeFloorsLeft: biomeState.biomeFloorsLeft,
       biomeCooldown: biomeState.biomeCooldown,
+      compass: false,
+      visionBonus: 0,
+      goblinLure: false,
+      flasks: 0,
     };
     s.keptGear = { weapon: null, armor: null, charm: null };
     s.run = run;
@@ -564,6 +570,24 @@ export class Game {
     '', // tier 3 is full brightness — never announced
   ];
 
+  /** A passable tile reasonably far from the entry (lured goblin spawns). */
+  private farFreeTile(floor: Floor): { x: number; y: number } | null {
+    let best: { x: number; y: number } | null = null;
+    let bestD = -1;
+    for (let y = 1; y < floor.h - 1; y++) {
+      for (let x = 1; x < floor.w - 1; x++) {
+        if (floor.tiles[y * floor.w + x] !== TILE.FLOOR) continue;
+        if (floor.monsters.some((mm) => mm.x === x && mm.y === y)) continue;
+        const d = Math.abs(x - floor.entry.x) + Math.abs(y - floor.entry.y);
+        if (d > bestD) {
+          bestD = d;
+          best = { x, y };
+        }
+      }
+    }
+    return best;
+  }
+
   /** Atmosphere band index for a depth (palette era; thresholds in balance). */
   private static bandOf(depth: number): number {
     let band = 0;
@@ -604,6 +628,18 @@ export class Game {
     const withTrial = this.rollTrial(run.depth);
     const biome = Game.advanceBiome(run, run.depth, withTrial);
     run.floor = genFloor(run.depth, this.genMods(run.curseIds), withTrial, biome);
+    // Peddler curios: the Compass knows the stairs; the Musk draws a goblin
+    if (run.compass) {
+      run.floor.seen[run.floor.stairs.y * run.floor.w + run.floor.stairs.x] = 1;
+    }
+    if (run.goblinLure) {
+      run.goblinLure = false;
+      if (!run.floor.monsters.some((mm) => mm.flees)) {
+        const spot = this.farFreeTile(run.floor);
+        if (spot) run.floor.monsters.push(spawnLootGoblin(run.depth, spot.x, spot.y));
+      }
+      log('The musk does its work: something gold skitters below.', 'mystic');
+    }
     Object.assign(this.heroPos, run.floor.entry);
     this.trail = [];
     run.oathUsed = false;
@@ -1003,13 +1039,15 @@ export class Game {
       }
     }
 
-    // the Peddler, under a standing order and with the gold to honor it
+    // the Peddler, under a standing order and with gold for ANY ware
     const pd = floor.peddler;
-    if (pd && pd.stock > 0 && this.state.settings.peddlerAuto !== 'ignore' &&
+    if (pd && pd.wares.length > 0 && this.state.settings.peddlerAuto !== 'ignore' &&
         floor.seen[pd.y * floor.w + pd.x] &&
         (this.state.settings.peddlerAuto === 'all' || pd.autoBought < 1) &&
-        this.state.gold >= Math.ceil(B.goldPile(run.depth) * B.PEDDLER_PRICE_PILES *
-          Math.pow(2, B.PEDDLER_STOCK - pd.stock))) {
+        pd.wares.some((w) => {
+          const def = wareById(w);
+          return def && this.state.gold >= this.warePrice(def, pd);
+        })) {
       const step = this.firstStep(dist, pd.x, pd.y);
       if (step) {
         this.goal = 'Visiting the Peddler';
@@ -1219,28 +1257,19 @@ export class Game {
       }
     }
 
-    // the Peddler: mystery wares, cash up front. Deliberate visits always
-    // buy; the autopilot buys only under a standing order (and 'one'
-    // means one per floor)
-    const order = s.settings.peddlerAuto;
-    const autoBuys = !deliberate && order !== 'ignore' &&
-      (order === 'all' || (floor.peddler?.autoBought ?? 1) < 1);
-    if (floor.tiles[i] === TILE.PEDDLER && floor.peddler &&
-        floor.peddler.stock > 0 && (deliberate || autoBuys)) {
-      const pd = floor.peddler;
-      const price = Math.ceil(B.goldPile(run.depth) * B.PEDDLER_PRICE_PILES *
-        Math.pow(2, B.PEDDLER_STOCK - pd.stock));
-      if (s.gold >= price) {
-        s.gold -= price;
-        pd.stock--;
-        if (!deliberate) pd.autoBought++;
-        const minRarity = chance(B.PEDDLER_LEGENDARY_CHANCE) ? 5 : 3;
-        this.acquireItem(rollItem(run.depth, minRarity, run.klass));
-        bus.emit({ type: 'sound', name: 'chest' });
-        log(`The Peddler takes ${fmt(price)} gold and hands over something wrapped in grave-cloth.`, 'gold');
-        if (pd.stock === 0) log('The Peddler bows, sold out, and stops meeting your eye.', 'system');
-      } else {
-        log(`The Peddler wants ${fmt(price)} gold. The ledger says no.`, 'system');
+    // the Peddler: a deliberate visit opens the stall; the autopilot buys
+    // down the list under a standing order ('one' = one per floor)
+    const pd = floor.peddler;
+    if (floor.tiles[i] === TILE.PEDDLER && pd && pd.wares.length > 0) {
+      const order = s.settings.peddlerAuto;
+      if (deliberate) {
+        bus.emit({ type: 'peddler' });
+      } else if (order !== 'ignore' && (order === 'all' || pd.autoBought < 1)) {
+        const affordable = pd.wares.find((w) => {
+          const def = wareById(w);
+          return def && s.gold >= this.warePrice(def, pd);
+        });
+        if (affordable && this.buyWare(affordable)) pd.autoBought++;
       }
     }
 
@@ -1503,6 +1532,58 @@ export class Game {
     const midas = this.d.powers.includes('midas') ? 3 : 1;
     return Math.round(B.SALVAGE_GOLD_BY_RARITY[item.rarity] * midas *
       this.curseMult('goldMult'));
+  }
+
+  /** A ware's price at this stall right now: base × 2^purchases-made. */
+  warePrice(def: WareDef, pd: { bought: number }): number {
+    const depth = this.state.run?.depth ?? 1;
+    return Math.ceil(B.goldPile(depth) * def.pricePiles * Math.pow(2, pd.bought));
+  }
+
+  /** Buy a ware from this floor's Peddler (UI modal and standing orders). */
+  buyWare(wareId: string): boolean {
+    const s = this.state;
+    const run = s.run;
+    const pd = run?.floor.peddler;
+    const def = wareById(wareId);
+    if (!run || !pd || !def || !pd.wares.includes(wareId)) return false;
+    const price = this.warePrice(def, pd);
+    if (s.gold < price) {
+      log(`The Peddler wants ${fmt(price)} gold for the ${def.name}. The ledger says no.`, 'system');
+      return false;
+    }
+    s.gold -= price;
+    pd.wares = pd.wares.filter((w) => w !== wareId);
+    pd.bought++;
+    bus.emit({ type: 'sound', name: 'chest' });
+    switch (wareId) {
+      case 'mystery': {
+        const minRarity = chance(B.PEDDLER_LEGENDARY_CHANCE) ? 5 : 3;
+        this.acquireItem(rollItem(run.depth, minRarity, run.klass));
+        break;
+      }
+      case 'compass':
+        run.compass = true;
+        run.floor.seen[run.floor.stairs.y * run.floor.w + run.floor.stairs.x] = 1;
+        break;
+      case 'oil':
+        run.visionBonus += 2;
+        this.recalc();
+        computeFov(run.floor, this.heroPos.x, this.heroPos.y, this.d.vision);
+        break;
+      case 'musk':
+        run.goblinLure = true;
+        break;
+      case 'draught':
+        run.flasks++;
+        break;
+    }
+    log(`The Peddler takes ${fmt(price)} gold for the ${def.name}.`, 'gold');
+    if (pd.wares.length === 0) {
+      log('The Peddler bows, sold out, and stops meeting your eye.', 'system');
+    }
+    bus.emit({ type: 'dirty' });
+    return true;
   }
 
   /** Toggle the player lock on an equipped item (needs the Quartermaster's Seal). */
@@ -2033,6 +2114,18 @@ export class Game {
 
     run.hp -= dmg;
     run.lastHitTurn = run.turn;
+    // a Sealed Draught drinks itself when the hit leaves the vessel low
+    if (run.flasks > 0 && run.hp > 0 && run.hp < this.d.maxHp * 0.25) {
+      run.flasks--;
+      const heal = Math.round(this.d.maxHp * 0.4);
+      run.hp = Math.min(this.d.maxHp, run.hp + heal);
+      bus.emit({ type: 'sound', name: 'shrine' });
+      bus.emit({
+        type: 'float', x: this.heroPos.x, y: this.heroPos.y,
+        text: `+${fmt(heal)}`, color: '#7fdd6a',
+      });
+      log('The Sealed Draught uncorks itself. Bitter, effective.', 'shrine');
+    }
     // the ward visibly eats its share (dot ticks never emit this — they
     // bypass the ward, and the missing shard quietly teaches that)
     const soaked = raw - afterDef;

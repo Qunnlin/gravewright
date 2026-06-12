@@ -13,6 +13,7 @@ import { SETS, rollSetPiece } from '../core/data/sets';
 import { RELICS } from '../core/data/relics';
 import { CLASSES } from '../core/data/classes';
 import { ESSENCE_UPGRADES } from '../core/data/upgrades';
+import { WARES } from '../core/data/peddler';
 
 let game: Game;
 let open = false;
@@ -163,10 +164,11 @@ function handle(act: string, id: string): void {
       if (run) {
         const floor = run.floor;
         if (floor.peddler) {
-          // already one on this floor: restock him
-          floor.peddler.stock = 3;
+          // already one on this floor: restock with EVERYTHING (dev perk)
+          floor.peddler.wares = WARES.map((w) => w.id);
+          floor.peddler.bought = 0;
           floor.peddler.autoBought = 0;
-          log('⚙ The Peddler restocks his sack.', 'system');
+          log('⚙ The Peddler restocks his sack — the full catalogue, even.', 'system');
         } else {
           const spot = [[2, 0], [0, 2], [-2, 0], [0, -2], [1, 1], [-1, -1]]
             .map(([dx, dy]) => ({ x: game.heroPos.x + dx, y: game.heroPos.y + dy }))
@@ -174,7 +176,7 @@ function handle(act: string, id: string): void {
               floor.tiles[pt.y * floor.w + pt.x] === 1);
           if (spot) {
             floor.tiles[spot.y * floor.w + spot.x] = TILE.PEDDLER;
-            floor.peddler = { ...spot, stock: 3, autoBought: 0, spotted: true };
+            floor.peddler = { ...spot, wares: WARES.map((w) => w.id), bought: 0, autoBought: 0, spotted: true };
             log('⚙ A peddler materializes, mildly offended by the summons.', 'system');
           } else {
             log('⚙ No open floor nearby for a stall.', 'system');

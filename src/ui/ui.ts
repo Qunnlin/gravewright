@@ -13,6 +13,7 @@ import { SETS, setById } from '../core/data/sets';
 import { BIOME_MONSTERS, MONSTERS, SPECIAL_MONSTERS, SPECIAL_NOTES } from '../core/data/monsters';
 import { ENCHANTS } from '../core/data/enchants';
 import { BIOMES, biomeById } from '../core/data/biomes';
+import { wareById } from '../core/data/peddler';
 import { ACHIEVEMENTS } from '../core/data/achievements';
 import {
   AFFIX_DEFS, RARITY_COLORS, RARITY_NAMES, WEAPON_KINDS, describeItem,
@@ -90,6 +91,9 @@ function onEvent(e: GameEvent): void {
       break;
     case 'wardhit':
       onWardHit(e.soaked);
+      break;
+    case 'peddler':
+      showPeddlerStall();
       break;
     case 'death':
       playSound(game, 'death');
@@ -350,6 +354,9 @@ function onClick(ev: MouseEvent): void {
       queueRender();
       break;
     }
+    case 'ware-buy':
+      if (game.buyWare(id)) showPeddlerStall(); // refresh or close when sold out
+      break;
     case 'cycle-peddlerauto': {
       const po = ['ignore', 'one', 'all'] as const;
       const pc = po.indexOf(game.state.settings.peddlerAuto);
@@ -1392,6 +1399,35 @@ export function closeModal(): void {
 
 export function modalOpen(): boolean {
   return $('modal-root').children.length > 0;
+}
+
+/** The Peddler's stall: his current wares with live, doubling prices. */
+function showPeddlerStall(): void {
+  const pd = game.state.run?.floor.peddler;
+  if (!pd || pd.wares.length === 0) {
+    closeModal();
+    return;
+  }
+  const rows = pd.wares.map((w) => {
+    const def = wareById(w)!;
+    const price = game.warePrice(def, pd);
+    const can = game.state.gold >= price;
+    return `
+      <div class="card ${can ? 'afford' : ''}">
+        <div class="card-head"><span class="card-name">${esc(def.name)}</span></div>
+        <div class="card-desc">${esc(def.desc)}</div>
+        <div class="card-foot"><span></span>
+          <button class="btn buy ${can ? '' : 'cant'}" data-act="ware-buy" data-id="${def.id}">⛁ ${fmt(price)}</button>
+        </div>
+      </div>`;
+  }).join('');
+  showModal(`
+    <h2>⚖ The Peddler</h2>
+    <p class="intro-tag">"Everything is final. Especially the prices."</p>
+    <div style="text-align:left">${rows}</div>
+    <p class="intro-hint">Each sale doubles his remaining prices.</p>
+    <button class="btn" data-act="modal-close">Walk away</button>
+  `);
 }
 
 function showIntro(): void {
