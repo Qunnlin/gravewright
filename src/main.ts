@@ -10,6 +10,7 @@ import { loadGame, saveGame } from './core/save';
 import { initRender, drawFrame, CELL } from './ui/render';
 import { initUI, uiFrame, modalOpen, closeModal } from './ui/ui';
 import { initTooltips } from './ui/tooltip';
+import { initMapTip, refreshMapTip } from './ui/maptip';
 import { initTutorial } from './ui/tutorial';
 import { armAudio } from './ui/sound';
 
@@ -23,6 +24,7 @@ const canvas = document.getElementById('dungeon') as HTMLCanvasElement;
 initRender(canvas, game);
 initUI(game);
 initTooltips();
+initMapTip(canvas, game);
 initTutorial(game);
 
 // the dev room only exists when explicitly summoned: ?dev=1
@@ -51,6 +53,7 @@ function frame(now: number): void {
   lastFrame = now;
   drawFrame(dt);
   uiFrame();
+  refreshMapTip(); // hovered cells reflect live state, not hover-time state
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

@@ -74,6 +74,7 @@ function render(): void {
       <button class="btn tiny" data-dev="spawn" data-id="boss">boss</button>
       <button class="btn tiny" data-dev="trial">trial next floor</button>
       <button class="btn tiny" data-dev="wrath">+1 wrath step</button>
+      <button class="btn tiny" data-dev="server">server room</button>
     </div>
     <div class="dev-section"><b>Loot</b>
       <button class="btn tiny" data-dev="item" data-id="3">epic</button>
@@ -148,6 +149,14 @@ function handle(act: string, id: string): void {
       break;
     case 'wrath':
       s.soulsThisReap += 6000;
+      break;
+    case 'server':
+      if (run) {
+        // recolor this floor now; the streak (natives + loot) starts below
+        run.floor.biome = 'server';
+        run.biomeFloorsLeft = 3;
+        log('⚙ The racks hum: this floor recolored, the next 3 are full server room.', 'system');
+      }
       break;
     case 'item':
       if (run) game.acquireItem(rollItem(run.depth, Number(id), run.klass));

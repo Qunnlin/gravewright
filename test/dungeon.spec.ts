@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { seedRng } from '../src/core/rng';
-import { genFloor, bfsMap, FLOOR_W, FLOOR_H } from '../src/core/dungeon';
+import { genFloor, bfsMap, DEFAULT_MODS, FLOOR_W, FLOOR_H } from '../src/core/dungeon';
 import { TILE } from '../src/core/types';
 import { eligibleMonsters, bossName } from '../src/core/data/monsters';
+import { Game } from '../src/core/game';
+import * as B from '../src/core/balance';
 
 describe('dungeon generation', () => {
   it('generates connected floors at every depth (entry → stairs reachable)', () => {
@@ -127,5 +129,75 @@ describe('dungeon generation', () => {
     seedRng(5);
     const horde = genFloor(8, { monsterHpMult: 1, monsterAtkMult: 1, monsterCountMult: 2 });
     expect(horde.monsters.length).toBeGreaterThan(base.monsters.length);
+  });
+
+  it('server-room floors carry natives, richer gold and data-cache chests', () => {
+    // paired generation on the same seed: the biome consumes no extra rng,
+    // so loot rolls align and the gold multiplier is directly observable
+    seedRng(606);
+    const plain = genFloor(16);
+    seedRng(606);
+    const server = genFloor(16, DEFAULT_MODS, false, 'server');
+
+    expect(plain.biome).toBeUndefined();
+    expect(server.biome).toBe('server');
+
+    // every chest in the server room is a data cache (epic+)
+    const chests = server.items.filter((it) => it.kind === 'chest');
+    expect(chests.length).toBeGreaterThan(0);
+    expect(chests.every((c) => c.special)).toBe(true);
+
+    // gold piles pay SERVER_GOLD_MULT richer than the same rolls on stone
+    const plainGold = plain.items.filter((it) => it.kind === 'gold');
+    const serverGold = server.items.filter((it) => it.kind === 'gold');
+    expect(serverGold.length).toBe(plainGold.length);
+    for (let i = 0; i < plainGold.length; i++) {
+      expect(serverGold[i].amount).toBeGreaterThanOrEqual(
+        Math.floor(plainGold[i].amount * B.SERVER_GOLD_MULT) - 1);
+    }
+
+    // natives crowd the racks (weighted ×3) and never spawn on honest stone
+    let natives = 0;
+    seedRng(607);
+    for (let i = 0; i < 60; i++) {
+      const f = genFloor(16, DEFAULT_MODS, false, 'server');
+      natives += f.monsters.filter((m) => ['daemon', 'sentinel', 'coolant'].includes(m.key)).length;
+      expect(genFloor(16).monsters.some((m) =>
+        ['daemon', 'sentinel', 'coolant'].includes(m.key))).toBe(false);
+    }
+    expect(natives).toBeGreaterThan(30);
+  });
+
+  it('the server room arrives rarely, deep, and stays for a streak of floors', () => {
+    seedRng(99001);
+    const game = new Game();
+    for (let i = 0; i < 400 && !game.state.run; i++) game.tick(100);
+    const run = game.state.run!;
+    expect(run).toBeTruthy();
+
+    // walk the crypt down and watch the biome sequence
+    run.depth = B.SERVER_ROOM_MIN_DEPTH - 2;
+    const seq: boolean[] = [];
+    for (let i = 0; i < 250; i++) {
+      game.descend();
+      seq.push(game.state.run!.floor.biome === 'server');
+    }
+
+    // never above the minimum depth (start offset: first descend lands at MIN-1)
+    expect(seq[0]).toBe(false);
+
+    // streaks exist and every maximal streak is a multiple of the streak
+    // length (back-to-back re-rolls can chain them)
+    const streaks: number[] = [];
+    let cur = 0;
+    for (const s of seq) {
+      if (s) cur++;
+      else if (cur > 0) { streaks.push(cur); cur = 0; }
+    }
+    // a streak still running when the loop ends is truncated — ignore it
+    expect(streaks.length).toBeGreaterThan(0);
+    for (const len of streaks) {
+      expect(len % B.SERVER_ROOM_FLOORS).toBe(0);
+    }
   });
 });

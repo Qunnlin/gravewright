@@ -13,6 +13,8 @@ export interface MonsterDef {
   defMult: number;
   tier: number;
   specials: MonsterSpecial[];
+  /** natives of a biome only spawn there (and spawn often, weighted up) */
+  biome?: 'server';
   flavor: string;
 }
 
@@ -47,6 +49,18 @@ export const MONSTERS: MonsterDef[] = [
   { key: 'horror',   name: 'Elder Horror',   glyph: 'U', color: '#ff66aa', minDepth: 34, window: Infinity, hpMult: 3.0, atkMult: 2.0, defMult: 3, tier: 6, specials: ['regen','vampiric','deadly'], flavor: 'Older than the rock it sleeps in.' },
 ];
 
+/** Server-room natives — they stalk only the humming biome. */
+export const SERVER_MONSTERS: MonsterDef[] = [
+  { key: 'daemon',   name: 'Daemon Process',    glyph: 'p', color: '#38c8f0', minDepth: 13, window: Infinity, hpMult: 0.9, atkMult: 1.25, defMult: 0, tier: 3, specials: ['fast'],              biome: 'server', flavor: 'It was never meant to stop running.' },
+  { key: 'sentinel', name: 'Firewall Sentinel', glyph: 'F', color: '#ff9e3d', minDepth: 13, window: Infinity, hpMult: 2.0, atkMult: 1.1,  defMult: 3, tier: 3, specials: ['armored', 'ranged'], biome: 'server', flavor: 'Default policy: deny.' },
+  { key: 'coolant',  name: 'Coolant Wraith',    glyph: '≈', color: '#7fd4ff', minDepth: 13, window: Infinity, hpMult: 1.3, atkMult: 1.2,  defMult: 1, tier: 4, specials: ['slow', 'vampiric'],  biome: 'server', flavor: 'The cold keeps something fresh in there.' },
+];
+
+/** Def lookup across every spawn table (UI flavor, codex-to-be). */
+export function monsterDefByKey(key: string): MonsterDef | undefined {
+  return MONSTERS.find((m) => m.key === key) ?? SERVER_MONSTERS.find((m) => m.key === key);
+}
+
 export const BOSS_NAMES = [
   'Bonelord Karguth',
   'The Pale Shepherd',
@@ -69,11 +83,14 @@ export function bossName(depth: number): string {
   return `${cycle}, Reborn ${'I'.repeat(Math.min(aeon, 5))}`;
 }
 
-export function eligibleMonsters(depth: number): MonsterDef[] {
+export function eligibleMonsters(depth: number, biome?: 'server'): MonsterDef[] {
   const list = MONSTERS.filter(
     (m) => depth >= m.minDepth && depth <= m.minDepth + m.window,
   );
   // Safety: never return empty (very deep floors fall back to open-window mobs).
-  if (list.length === 0) return MONSTERS.filter((m) => m.window === Infinity);
-  return list;
+  const base = list.length === 0 ? MONSTERS.filter((m) => m.window === Infinity) : list;
+  if (biome === 'server') {
+    return [...base, ...SERVER_MONSTERS.filter((m) => depth >= m.minDepth)];
+  }
+  return base;
 }

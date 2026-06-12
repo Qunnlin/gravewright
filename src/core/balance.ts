@@ -233,6 +233,24 @@ export function reforgeCost(toDepth: number): number {
   return Math.ceil(40 * goldPile(toDepth));
 }
 
+/** ---- atmosphere & biomes ---- */
+
+/** Depths at which the crypt's atmosphere turns: bone dust → wet rot →
+ *  drowned cold → void. Bands hold flat, then snap over the last few depths
+ *  before the next stop — the change should land like a door closing, not a
+ *  slow dimmer. Render palettes and the crossing murmur both key off this. */
+export const ATMOSPHERE_BANDS = [1, 12, 24, 36];
+
+/** The server room hums only this deep... */
+export const SERVER_ROOM_MIN_DEPTH = 13;
+/** ...with this chance to begin per eligible floor (never starts on boss or
+ *  trial floors). An easter egg, not a destination — rare enough to be a story. */
+export const SERVER_ROOM_CHANCE = 0.05;
+/** Once entered, the racks go on for this many floors. */
+export const SERVER_ROOM_FLOORS = 3;
+/** Salvaged hardware: gold piles in the server room run this much richer. */
+export const SERVER_GOLD_MULT = 1.5;
+
 /** ---- dungeon population ---- */
 
 export function monsterCount(depth: number): number {

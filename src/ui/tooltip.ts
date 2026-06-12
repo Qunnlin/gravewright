@@ -36,6 +36,22 @@ export function initTooltips(): void {
   }, 500);
 }
 
+/** Programmatic tips (the canvas hover inspector). An anchored [data-tip]
+ *  element always wins — a programmatic tip never overrides or hides one.
+ *  Pass updateContent=false when the html is unchanged to skip the innerHTML
+ *  write (this runs every animation frame while hovering the map). */
+export function showTipAt(html: string, mx: number, my: number, updateContent = true): void {
+  if (!tipEl || anchor) return;
+  if (updateContent) tipEl.innerHTML = html;
+  tipEl.classList.add('show');
+  position(mx, my);
+}
+
+export function hideTip(): void {
+  if (!tipEl || anchor) return;
+  tipEl.classList.remove('show');
+}
+
 function position(mx: number, my: number): void {
   const t = tipEl!;
   const pad = 14;

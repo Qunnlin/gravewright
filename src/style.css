@@ -233,6 +233,54 @@ main {
   cursor: crosshair;
 }
 
+/* ---------- status indicators (top-left of the map) ---------- */
+
+#status-icons {
+  position: absolute;
+  top: 9px;
+  left: 9px;
+  display: flex;
+  gap: 5px;
+  z-index: 5;
+  /* click-through: the map cells (and their hover tips) stay reachable */
+  pointer-events: none;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(8, 6, 14, 0.8);
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  padding: 1px 7px;
+  font-size: 12px;
+  font-weight: 700;
+  text-shadow: 0 0 6px currentColor;
+}
+.status-chip .st-turns {
+  font-size: 9.5px;
+  font-weight: 400;
+  color: var(--muted);
+  text-shadow: none;
+}
+.st-bless { color: #ffee88; border-color: rgba(255, 238, 136, 0.35); }
+.st-poison { color: #7fdd6a; border-color: rgba(127, 221, 106, 0.35); }
+.st-burn { color: #ff8844; border-color: rgba(255, 136, 68, 0.35); }
+
+/* about to expire: the light gutters (the border cue survives
+   prefers-reduced-motion, which kills the blink) */
+.status-chip.expiring {
+  animation: status-blink 0.7s ease-in-out infinite;
+  border-color: currentColor;
+  border-style: dashed;
+}
+
+@keyframes status-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
 #right {
   flex: 1;
   display: flex;
@@ -785,6 +833,8 @@ main {
 .tip-diff-down { color: #ff7788; font-family: var(--font-mono); font-size: 11.5px; }
 .tip-salvage { color: var(--muted); font-size: 11px; font-family: var(--font-mono); }
 .tip-set { font-weight: 700; font-size: 13px; }
+.tip-enchant { color: var(--champion); font-family: var(--font-mono); font-size: 11.5px; }
+.tip-flavor { color: var(--ink); font-style: italic; font-size: 12.5px; }
 
 /* Vestige set items: every color the crypt has eaten */
 .rainbow-text {
@@ -993,6 +1043,69 @@ button[data-tip], .btn[data-tip] { cursor: pointer; }
   border-radius: 3px;
   font-family: var(--font-mono);
   padding: 2px 6px;
+}
+
+/* ---------- CRT filter (Settings → CRT filter; body.crt) ---------- */
+
+/* phosphor saturation + a whisper of chromatic fringing on everything.
+   drop-shadow follows the rendered raster, so all text and glyphs pick up
+   the classic red/cyan misconvergence at their edges. */
+body.crt #app {
+  filter: saturate(1.18) contrast(1.06) brightness(1.04)
+    drop-shadow(0.7px 0 0 rgba(255, 70, 70, 0.16))
+    drop-shadow(-0.7px 0 0 rgba(70, 200, 255, 0.16));
+}
+
+/* the ambient faint scanlines yield to the real thing */
+body.crt::after { display: none; }
+
+#crt-overlay { display: none; }
+
+body.crt #crt-overlay {
+  display: block;
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 300;
+  overflow: hidden;
+  /* curved-glass vignette */
+  background: radial-gradient(ellipse at center,
+    transparent 55%, rgba(0, 0, 0, 0.16) 80%, rgba(0, 0, 0, 0.45) 100%);
+}
+
+/* scanlines + aperture-grille phosphor triads */
+body.crt #crt-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg,
+      rgba(255, 0, 60, 0.045) 0 1px,
+      rgba(0, 255, 120, 0.032) 1px 2px,
+      rgba(0, 80, 255, 0.045) 2px 3px);
+}
+
+/* a slow retrace band rolling down the glass */
+body.crt #crt-overlay::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -20vh;
+  height: 16vh;
+  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.025), transparent);
+  animation: crt-roll 9s linear infinite;
+}
+
+@keyframes crt-roll {
+  from { transform: translateY(0); }
+  to { transform: translateY(140vh); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* the global animation kill-switch would freeze the band mid-screen */
+  body.crt #crt-overlay::after { display: none; }
 }
 
 /* ---------- scrollbars ---------- */
