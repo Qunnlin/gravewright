@@ -14,7 +14,9 @@
  *  gets very easy": optimally-shopped income out-grows the base curves, so
  *  the frontier (depth ~16+) was one-shot territory with harmless monsters
  *  (probes: heroTTK 1, monTTK 30–100). The ramp bends both curves upward
- *  past LATE_RAMP_START without touching the well-paced early game. */
+ *  past LATE_RAMP_START without touching the well-paced early game.
+ *  Steepened 2026-06-12 (playtest: "monsters scale way slower than the
+ *  player, late game") — HP 1.08→1.10, ATK 1.05→1.065 per depth. */
 export const LATE_RAMP_START = 12;
 
 function lateRamp(depth: number, rate: number): number {
@@ -22,15 +24,18 @@ function lateRamp(depth: number, rate: number): number {
 }
 
 export function monsterHp(depth: number): number {
-  return 9 * Math.pow(1.23, depth - 1) * lateRamp(depth, 1.08);
+  return 9 * Math.pow(1.23, depth - 1) * lateRamp(depth, 1.10);
 }
 
 export function monsterAtk(depth: number): number {
-  return 3.2 * Math.pow(1.19, depth - 1) * lateRamp(depth, 1.05);
+  return 3.2 * Math.pow(1.19, depth - 1) * lateRamp(depth, 1.065);
 }
 
+/** Steepened with the 2026-06-12 defense pass (playtest: "mob defense seems
+ *  super low/not scaling"): deep monsters now shrug off real fractions of a
+ *  hit via mitigation(), instead of def being a rounding error. */
 export function monsterDef(depth: number): number {
-  return Math.max(0, (depth - 1) * 0.9 * Math.pow(1.05, depth - 1));
+  return Math.max(0, (depth - 1) * 1.0 * Math.pow(1.07, depth - 1));
 }
 
 export function monsterXp(depth: number, tier: number): number {
@@ -78,10 +83,16 @@ export function mitigation(def: number): number {
 }
 
 /** HERO mitigation: the pivot scales with depth so defense is a treadmill,
- *  not a one-time 80% checkbox (the old fixed-35 pivot capped out by ~depth 8
- *  and made every further DEF purchase feel useless — playtest finding). */
+ *  not a one-time checkbox. The old hard min(0.8,·) clamp re-created the
+ *  checkbox for invested players: compounding DEF upgrades (2·l·1.1^l ×
+ *  1.1^l) cross the linear cap line 4·(25+6·depth) everywhere, pegging the
+ *  panel at −80% forever (playtest: "defense still stuck at 80%"). Now an
+ *  asymptote toward 85%: every DEF point always moves the number, deeper
+ *  floors always dilute it, nothing is ever "stuck". */
+export const HERO_MITIGATION_MAX = 0.85;
+
 export function heroMitigation(def: number, depth: number): number {
-  return Math.min(0.8, def / (def + 25 + 6 * depth));
+  return HERO_MITIGATION_MAX * def / (def + 25 + 6 * depth);
 }
 
 /** Ravenous Descent: floors collapse when the vessel out-damages their
@@ -167,12 +178,13 @@ export const REAP_SOUL_BASE = 6000;
 
 /**
  * Crypt Wrath: hoarding souls past reap-readiness angers the crypt.
- * Monsters gain +25% HP & ATK per extra soul-threshold harvested this cycle.
+ * Monsters gain +40% HP & ATK per extra soul-threshold harvested this cycle
+ * (0.25 → 0.40, 2026-06-12 — playtest: "wrath helps but is not enough").
  * ×1 until the first essence is earned, then climbs without bound — the
  * incentive to actually Reap instead of squatting on an over-leveled vessel.
  */
 export function cryptWrath(soulsThisReap: number): number {
-  return 1 + 0.25 * Math.max(0, soulsThisReap / REAP_SOUL_BASE - 1);
+  return 1 + 0.4 * Math.max(0, soulsThisReap / REAP_SOUL_BASE - 1);
 }
 
 export function essenceGain(soulsThisReap: number): number {

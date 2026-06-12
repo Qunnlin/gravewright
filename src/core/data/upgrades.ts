@@ -192,7 +192,10 @@ export const ESSENCE_UPGRADES: UpgradeDef[] = [
   {
     id: 'memory', pool: 'essence', name: 'Deep Memory',
     desc: 'The crypt remembers your descent. Vessels begin 2 depths lower per level.',
-    base: 3, growth: 2.5, max: 10,
+    // max 10→50, growth 2.5→1.9 (2026-06-12): the endgame frontier should
+    // live in the hundreds of depths, not the dozens — this is the upgrade
+    // that carries starts there, so its ceiling must not be the bottleneck
+    base: 3, growth: 1.9, max: 50,
     eff: (l) => l * 2,
     effDesc: (l) => `Start at depth ${1 + l * 2}`,
   },

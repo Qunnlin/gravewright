@@ -121,6 +121,17 @@ describe('save round-trip', () => {
     expect(decodeSave(btoa(JSON.stringify(enabled))).settings.crtFilter).toBe(true);
   });
 
+  it('clamps the autopilot speed throttle to [0.25, 1]', () => {
+    const cases: [unknown, number][] = [
+      [undefined, 1], ['fast', 1], [0, 0.25], [Number.NaN, 1],
+      [0.1, 0.25], [0.5, 0.5], [5, 1],
+    ];
+    for (const [v, want] of cases) {
+      const decoded = decodeSave(btoa(JSON.stringify({ v: 1, settings: { autoSpeed: v } })));
+      expect(decoded.settings.autoSpeed, `autoSpeed ${String(v)}`).toBe(want);
+    }
+  });
+
   it('log filter toggles default on and survive round-trips', () => {
     const partial = { v: 1 };
     const d1 = decodeSave(btoa(JSON.stringify(partial)));

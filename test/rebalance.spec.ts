@@ -14,14 +14,19 @@ describe('hero mitigation scales with depth', () => {
     const deep = B.heroMitigation(def, 30);
     expect(shallow).toBeGreaterThan(mid);
     expect(mid).toBeGreaterThan(deep);
-    // depth 1 behaves close to the old fixed-35 pivot
-    expect(shallow).toBeCloseTo(100 / 131, 5);
+    // depth 1 behaves close to the old fixed-35 pivot, scaled by the asymptote
+    expect(shallow).toBeCloseTo(B.HERO_MITIGATION_MAX * (100 / 131), 5);
   });
 
-  it('is bounded [0, 0.8] at any depth', () => {
+  it('approaches HERO_MITIGATION_MAX but never gets stuck at a hard cap', () => {
     for (const depth of [1, 10, 50, 200]) {
       expect(B.heroMitigation(0, depth)).toBe(0);
-      expect(B.heroMitigation(1e12, depth)).toBeLessThanOrEqual(0.8);
+      expect(B.heroMitigation(1e12, depth)).toBeLessThan(B.HERO_MITIGATION_MAX);
+      // the old hard clamp made marginal DEF worthless past 4*pivot;
+      // now every point of DEF strictly improves mitigation
+      const pivotCap = 4 * (25 + 6 * depth);
+      expect(B.heroMitigation(pivotCap + 1000, depth))
+        .toBeGreaterThan(B.heroMitigation(pivotCap, depth));
     }
   });
 

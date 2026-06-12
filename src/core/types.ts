@@ -199,6 +199,8 @@ export interface Settings {
   logCombat: boolean;
   logLoot: boolean;
   logSystem: boolean;
+  /** autopilot throttle: fraction of the unlocked action rate (0.25–1) */
+  autoSpeed: number;
 }
 
 export interface GameState {

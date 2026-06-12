@@ -71,6 +71,20 @@ how-tos and `CLAUDE.md` for the contribution rules.
   `?dev=1` has a force button.
 - [x] CRT filter in Settings (default off): scanlines, phosphor grille,
   vignette, retrace band, chromatic fringing; respects prefers-reduced-motion.
+- [x] Log rework (PR #9): consecutive repeats collapse into ×N pills,
+  combat/loot/system filter chips (persisted), descend lines as depth
+  dividers, big moments restyled as headlines (display font + glow).
+- [x] Defense rework part 2 (PR #10): hero mitigation is now an asymptote
+  toward 85% (no more hard cap pegging the panel at −80% for invested
+  players); monster DEF steepened (coeff 0.9→1.0, growth 1.05→1.07).
+- [x] Late-game scaling (PR #10, playtest feedback): late ramp HP 1.08→1.10,
+  ATK 1.05→1.065 per depth past 12; Crypt Wrath slope 0.25→0.40. Measured:
+  frontier monTTK 1000+→59–100, wall expedition d20→d18, cycle-1 pacing
+  unchanged. Needs human feel-validation.
+- [x] Deep Memory uncorked (PR #10): max 10→50 (start depth up to 101),
+  cost growth 2.5→1.9 — the endgame frontier should live in the hundreds.
+- [x] Autopilot speed slider (PR #10): Settings range 25–100% of the
+  unlocked action rate; persisted, applies to autopilot and click-to-move.
 
 ## Quick wins (S effort, mostly QoL)
 
