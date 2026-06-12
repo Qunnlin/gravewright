@@ -13,7 +13,10 @@ export type Affix =
   | 'lifesteal'  // % of damage dealt healed
   | 'xpPct'    // +% experience
   | 'bonePct'  // +% bone gain
-  | 'dodge';   // +% chance to avoid attacks
+  | 'dodge'    // +% chance to avoid attacks
+  | 'dotResist'// −% poison/burn tick damage
+  | 'thorns'   // flat damage reflected to melee attackers
+  | 'cleave';  // % of dealt damage splashed to enemies adjacent to the target
 
 export type WeaponKind = 'blade' | 'heavy' | 'polearm' | 'bow' | 'focus';
 
@@ -284,6 +287,9 @@ export interface Derived {
   keepGearChance: number; // %
   marrowPct: number;  // % of gold converted to bones on death
   dodge: number;      // %
+  dotResist: number;  // % poison/burn tick damage ignored
+  thorns: number;     // flat damage returned to melee attackers
+  cleave: number;     // % of dealt damage splashed around the target
   blockPct: number;   // % damage reduction after mitigation
   startDepth: number;
   summonCdMax: number; // ms

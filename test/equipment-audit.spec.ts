@@ -8,8 +8,8 @@
 import { describe, expect, it } from 'vitest';
 import { seedRng } from '../src/core/rng';
 import {
-  AFFIX_DEFS, FAVORED_WEAPON_MULT, WEAPON_KINDS, kindAllows, kindFavors,
-  rollItem, scoreItem,
+  AFFIX_DEFS, FAVORED_WEAPON_MULT, WEAPON_KINDS, affixCap, kindAllows,
+  kindFavors, rollItem, scoreItem,
 } from '../src/core/data/items';
 import { SETS, rollSetPiece } from '../src/core/data/sets';
 import { CLASSES } from '../src/core/data/classes';
@@ -42,7 +42,7 @@ describe('equipment audit', () => {
         for (const [affix, v] of Object.entries(it.stats) as [Affix, number][]) {
           const def = AFFIX_DEFS.find((d) => d.affix === affix)!;
           expect(def.slots, `${affix} on ${it.slot}`).toContain(it.slot);
-          if (def.cap > 0) expect(v, `${affix} cap`).toBeLessThanOrEqual(def.cap);
+          expect(v, `${affix} depth-cap`).toBeLessThanOrEqual(affixCap(def, depth));
           expect(v).toBeGreaterThan(0);
         }
       }
@@ -117,29 +117,32 @@ describe('equipment audit', () => {
         }
       }
     }
-    // the design promise, asserted at one reference depth for WEAPON and
-    // ARMOR pieces: the primary line beats the mean legendary primary.
-    // CHARM pieces measurably break the promise today (Ledgerstone 16% of
-    // legendary score; Phylactery loses even its primary) — that's the
-    // open finding in the Vestige report, pending a design decision, so
-    // charms are deliberately not pinned here yet.
+    // the design promises, asserted at one reference depth (post-rework:
+    // five curated lines per piece). Weapon/armor primaries beat the mean
+    // legendary primary; EVERY piece — charms included, the audit's fixed
+    // finding — lands within striking distance of the legendary mean TOTAL.
     seedRng(2020);
     const depth = 20;
     const legPrim: Record<Slot, number[]> = { weapon: [], armor: [], charm: [] };
+    const legScore: Record<Slot, number[]> = { weapon: [], armor: [], charm: [] };
     for (let i = 0; i < 900; i++) {
       const it = rollItem(depth, 5);
       const v = it.slot === 'weapon' ? it.stats.atk ?? 0 : it.slot === 'armor' ? it.stats.def ?? 0
         : Math.max(...Object.values(it.stats));
       legPrim[it.slot].push(v);
+      legScore[it.slot].push(scoreItem(it));
     }
     const meanOf = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length);
     for (const set of SETS) {
       for (const piece of set.pieces) {
-        if (piece.slot === 'charm') continue;
         const p = rollSetPiece(set.id, piece.slot, depth)!;
-        const primary = piece.slot === 'weapon' ? p.stats.atk ?? 0 : p.stats.def ?? 0;
-        expect(primary, `${piece.name} primary vs mean legendary ${piece.slot}`)
-          .toBeGreaterThanOrEqual(meanOf(legPrim[piece.slot]) * 0.9);
+        if (piece.slot !== 'charm') {
+          const primary = piece.slot === 'weapon' ? p.stats.atk ?? 0 : p.stats.def ?? 0;
+          expect(primary, `${piece.name} primary vs mean legendary ${piece.slot}`)
+            .toBeGreaterThanOrEqual(meanOf(legPrim[piece.slot]) * 0.9);
+        }
+        expect(scoreItem(p), `${piece.name} total vs mean legendary ${piece.slot}`)
+          .toBeGreaterThanOrEqual(meanOf(legScore[piece.slot]) * 0.8);
       }
     }
   });

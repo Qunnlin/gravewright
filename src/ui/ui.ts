@@ -855,6 +855,9 @@ function panelVessel(): string {
       'All bone multipliers combined. Bones persist through death.'],
   ];
   if (d.dodge > 0) statRows.push(['Dodge', `${d.dodge}%`, 'Chance to avoid an attack entirely.']);
+  if (d.dotResist > 0) statRows.push(['Dot resist', `${Math.round(d.dotResist)}%`, 'Poison and burn ticks lose this share of their bite.']);
+  if (d.thorns > 0) statRows.push(['Thorns', fmt(Math.round(d.thorns)), 'Melee attackers take this much damage back on every contact.']);
+  if (d.cleave > 0) statRows.push(['Cleave', `${Math.round(d.cleave)}%`, 'Strikes splash this share of their damage to enemies adjacent to your target.']);
   if (d.blockPct > 0) statRows.push(['Block', `${d.blockPct}%`, 'Percentage damage reduction applied after the armor soak.']);
   if (d.lifesteal > 0) statRows.push(['Lifesteal', `${Math.round(d.lifesteal)}%`, 'Heals this share of damage dealt.']);
   if (d.healOnKill > 0) statRows.push(['Heal on kill', `${Math.round(d.healOnKill)}%`, 'Max HP restored with every kill.']);

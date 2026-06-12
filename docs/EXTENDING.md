@@ -59,7 +59,9 @@ union in `types.ts`, set `classes` (null = everyone) and `favored`, and check
 Three places, all mandatory:
 
 1. `types.ts`: extend the `Affix` union.
-2. `data/items.ts`: `AFFIX_DEFS` entry — `slots` it may roll on, `perBudget`
+2. `data/items.ts`: `AFFIX_DEFS` entry — `slots` it may roll on, `perBudget`,
+   and for percent affixes the depth-scaled cap (`capBase + capPerDepth·depth`,
+   hard-ceilinged by `cap`)
    (value per point of depth-scaled budget), `cap` (0 = uncapped), `label`.
    Plus a weight in `scoreItem` so auto-equip values it.
 3. The effect itself: simple stat reads happen via `gearStat('<affix>')` in
