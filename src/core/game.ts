@@ -79,6 +79,7 @@ export function defaultState(): GameState {
       autoEquip: true, autoSalvageBelow: 0, protectRarity: 4,
       buyAmount: 1, autoMend: false, protectVestiges: true, ravenousActive: true,
       crtFilter: false,
+      logCombat: true, logLoot: true, logSystem: true,
     },
   };
 }

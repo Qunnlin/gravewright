@@ -120,4 +120,16 @@ describe('save round-trip', () => {
     const enabled = { v: 1, settings: { crtFilter: true } };
     expect(decodeSave(btoa(JSON.stringify(enabled))).settings.crtFilter).toBe(true);
   });
+
+  it('log filter toggles default on and survive round-trips', () => {
+    const partial = { v: 1 };
+    const d1 = decodeSave(btoa(JSON.stringify(partial)));
+    expect(d1.settings.logCombat).toBe(true);
+    expect(d1.settings.logLoot).toBe(true);
+    expect(d1.settings.logSystem).toBe(true);
+    const muted = { v: 1, settings: { logLoot: false, logSystem: 'junk' } };
+    const d2 = decodeSave(btoa(JSON.stringify(muted)));
+    expect(d2.settings.logLoot).toBe(false);
+    expect(d2.settings.logSystem).toBe(true); // junk coerces to the default
+  });
 });
