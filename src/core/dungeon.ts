@@ -192,6 +192,7 @@ export function spawnMonster(
 export function spawnLesser(depth: number, x: number, y: number, mods: GenMods): Monster {
   const m = spawnMonster(Math.max(1, depth - 3), x, y, mods, { plain: true });
   m.name = `Risen ${m.name}`;
+  m.summoned = true;
   m.hp = Math.ceil(m.hp * 0.5);
   m.maxHp = m.hp;
   m.xp = Math.ceil(m.xp * 0.3);

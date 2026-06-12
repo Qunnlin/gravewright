@@ -9,6 +9,21 @@ and bumps `src/core/version.ts` + `package.json`.
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-06-12 · Standing Orders
+
+### Added
+
+- **Auto-trial standing orders** (Settings → "Auto-trial wagers"): when the
+  autopilot finds a Sealed Hall, choose *ask me* (the pause + modal, as
+  before), *always swear*, or *always walk past* — auto runs no longer get
+  stuck on the offer screen. Manual encounters always ask. (#38)
+
+### Fixed
+
+- **Lich deadlock**: summoners re-raised lessers faster than the procession
+  could cut them down, locking vessels in an unwinnable melee. Summoners now
+  hold while `SUMMONED_CAP` (5) of their raised dead still stand. (#38)
+
 ## [1.2.0] — 2026-06-12 · The Quartermaster's Reckoning
 
 ### Added

@@ -321,6 +321,11 @@ export const BIOME_FLOORS = 3;
  *  spacing ≈ COOLDOWN + 1/CHANCE ≈ 60 floors between visits. */
 export const BIOME_COOLDOWN = 40;
 
+/** Summoners stop raising adds while this many of their lessers still
+ *  stand on the floor — playtest: liches re-raised faster than the
+ *  procession could cut them down, deadlocking the vessel. */
+export const SUMMONED_CAP = 5;
+
 /** ---- dungeon population ---- */
 
 export function monsterCount(depth: number): number {

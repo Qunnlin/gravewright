@@ -71,6 +71,8 @@ export interface Monster {
   enchants: string[];
   /** spawned by the Trial of the Sealed Hall */
   trial?: boolean;
+  /** raised mid-fight by a summoner (counts against SUMMONED_CAP) */
+  summoned?: boolean;
   awake: boolean;
   /** turn-parity helpers */
   slowSkip: boolean;
@@ -206,6 +208,9 @@ export interface Settings {
   logSystem: boolean;
   /** autopilot throttle: fraction of the unlocked action rate (0.25–1) */
   autoSpeed: number;
+  /** standing order for Sealed Hall wagers found on autopilot:
+   *  'ask' pauses with the modal, 'accept'/'decline' resolve instantly */
+  trialAuto: 'ask' | 'accept' | 'decline';
 }
 
 export interface GameState {
