@@ -558,9 +558,26 @@ main {
 
 /* ---------- tabs & panel: codex register ---------- */
 
+/* the rail is a size container: the tab layout responds to its REAL width
+   (viewport breakpoints miss zoom, scrollbars and the flex math) */
+#right { container-type: inline-size; }
+
 #tabs {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
   gap: 3px;
+  /* fallback for browsers without container queries: never overflow */
+  overflow: hidden;
+}
+
+/* measured: six full-size Cinzel labels need ~620px — MORE than the side
+   rail's 560px maximum, which is why one row always bled. Below 620px the
+   bar is a deliberate two-shelf register: full-size labels, zero crush.
+   (Single row only happens in the stacked layout, where the bar is wide.) */
+@container (max-width: 620px) {
+  #tabs { grid-template-columns: repeat(3, 1fr); }
+  .tab { border-radius: 6px; }
+  .tab.active { border-bottom: 1px solid var(--border); }
 }
 
 .tab {
@@ -582,15 +599,6 @@ main {
   transition: color 0.15s;
 }
 .tab:hover { color: var(--text); }
-
-.tab .tab-icon { display: none; font-size: 14px; line-height: 1; }
-
-/* in the squeeze band (the rail at/near its 340px minimum, or very narrow
-   stacked screens) the labels can't fit six tabs — glyphs take over */
-@media (max-width: 1460px) and (min-width: 1241px), (max-width: 700px) {
-  .tab .tab-label { display: none; }
-  .tab .tab-icon { display: inline; }
-}
 .tab.active {
   color: #efe9ff;
   background: linear-gradient(180deg, #16121f, var(--bg-panel));

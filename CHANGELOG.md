@@ -9,6 +9,19 @@ and bumps `src/core/version.ts` + `package.json`.
 
 ## [Unreleased]
 
+## [1.1.1] — 2026-06-12
+
+### Fixed
+
+- **Tab bar, solved properly.** Six full-size labels need ~620px — more than
+  the side rail's 560px maximum — so one row always bled ("Necromancy"
+  overflowing into "Crypt"). The bar now responds to the rail's *real* width
+  via a container query: below 620px it becomes a deliberate two-shelf
+  register (3×3, full-size labels, no icons, no crushed type); a single row
+  appears only in the stacked layout where the bar is genuinely wide.
+  Verified overflow-free at 17 viewport widths from 420 to 1700px. The
+  icon-only mode from v1.1.0 is gone. (#31)
+
 ## [1.1.0] — 2026-06-12 · The Crypt Grows Stranger
 
 Everything since the GeekWeek release, delivered across PRs #1–#29.
