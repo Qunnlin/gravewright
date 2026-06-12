@@ -21,6 +21,10 @@
         <span class="currency cur-essence" id="cur-essence-wrap" data-tip="<b>Essence</b> — the prestige currency. Earned only by Reaping; buys permanent power that survives every collapse. The small +N is what a Reaping would pay right now.">
           <b class="c-essence">❖</b> <span id="cur-essence">0</span><span id="cur-essence-pending" class="pending-yield"></span><small>essence</small></span>
       </div>
+      <div id="speed-wrap" data-tip="Throttle the autopilot below its full unlocked rate — you bought the speed, you choose how much of it to watch. Applies to autopilot and click-to-move.">
+        <input type="range" id="auto-speed" min="25" max="100" step="1" value="100" aria-label="Autopilot speed">
+        <span id="auto-speed-note">×1.00</span>
+      </div>
       <button class="btn" id="btn-auto" data-act="auto-toggle" data-tip="Toggle autopilot (P). Movement keys seize manual control.">▶ AUTO</button>
     </header>
 

@@ -86,6 +86,13 @@ function mergeState(loaded: Partial<GameState>): GameState {
   merged.relics = Array.isArray(merged.relics)
     ? merged.relics.filter((id) => relicById(id) !== undefined)
     : [];
+  merged.relicsSeen = Array.isArray(merged.relicsSeen)
+    ? [...new Set(merged.relicsSeen.filter((id) => relicById(id) !== undefined))]
+    : [];
+  // currently-held relics were necessarily seen (heals pre-relicsSeen saves)
+  for (const id of merged.relics) {
+    if (!merged.relicsSeen.includes(id)) merged.relicsSeen.push(id);
+  }
   merged.curses = Object.fromEntries(
     Object.entries(merged.curses).filter(([id, on]) => curseById(id) && on === true));
 

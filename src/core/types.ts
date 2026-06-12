@@ -240,6 +240,8 @@ export interface GameState {
   strategy: Strategy;
   curses: Record<string, boolean>;
   relics: string[];
+  /** distinct relic ids ever found, lifetime (relicsFound counts every drop) */
+  relicsSeen: string[];
   /** gear waiting for the next vessel (survivors of keep-gear rolls) */
   keptGear: Gear;
   /** the Satchel: carried items awaiting manual decisions; survives death, not reaping */

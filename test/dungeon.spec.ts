@@ -55,10 +55,12 @@ describe('dungeon generation', () => {
     }
   });
 
-  it('boss names exist arbitrarily deep', () => {
+  it('boss names exist arbitrarily deep, with proper roman aeons', () => {
     expect(bossName(5)).toBe('Bonelord Karguth');
-    expect(bossName(50)).toBeTruthy();
-    expect(bossName(500)).toBeTruthy();
+    expect(bossName(55)).toBe('Bonelord Karguth, Reborn II');
+    expect(bossName(255)).toMatch(/, Reborn VI$/); // not IIIIII
+    expect(bossName(505)).toMatch(/, Reborn XI$/);
+    expect(bossName(2505)).toMatch(/, Reborn LI$/);
   });
 
   it('champions spawn rarely with enchants, stat boosts and prefixed names', () => {

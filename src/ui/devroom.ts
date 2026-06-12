@@ -164,8 +164,9 @@ function handle(act: string, id: string): void {
     case 'relics':
       for (const r of RELICS) {
         if (!s.relics.includes(r.id)) s.relics.push(r.id);
+        if (!s.relicsSeen.includes(r.id)) s.relicsSeen.push(r.id);
       }
-      s.relicsFound = s.relics.length;
+      s.relicsFound = Math.max(s.relicsFound, s.relics.length);
       game.recalc();
       break;
     case 'set-piece': {

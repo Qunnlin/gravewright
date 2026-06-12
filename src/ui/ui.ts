@@ -50,16 +50,15 @@ export function initUI(g: Game): void {
   ).join('');
 
   document.body.addEventListener('click', onClick);
-  // the speed slider streams 'input' events mid-drag; update the setting and
-  // its label in place — a full panel re-render would yank the thumb
-  document.body.addEventListener('input', (ev) => {
-    const t = ev.target as HTMLInputElement | null;
-    if (t?.id === 'auto-speed') {
-      game.state.settings.autoSpeed = Number(t.value) / 100;
-      const note = document.getElementById('auto-speed-note');
-      if (note) note.textContent = autoSpeedNote();
-    }
+  // the speed slider lives in the topbar (static DOM, never re-rendered, so
+  // the thumb can't be yanked mid-drag) and streams 'input' events
+  const speedEl = $('auto-speed') as HTMLInputElement;
+  speedEl.value = String(Math.round(g.state.settings.autoSpeed * 100));
+  speedEl.addEventListener('input', () => {
+    game.state.settings.autoSpeed = Number(speedEl.value) / 100;
+    $('auto-speed-note').textContent = autoSpeedNote();
   });
+  $('auto-speed-note').textContent = autoSpeedNote();
   bus.on(onEvent);
   applyCrtFilter();
   applyLogFilters();
@@ -491,6 +490,10 @@ export function uiFrame(): void {
     autoBtn.classList.toggle('off', !s.auto);
     autoBtn.dataset.tip = 'Toggle autopilot (P). Movement keys seize manual control.';
   }
+
+  const speedNote = autoSpeedNote();
+  const noteEl = $('auto-speed-note');
+  if (noteEl.textContent !== speedNote) noteEl.textContent = speedNote;
 
   $('badge-reap').textContent = game.canReap() ? '!' : '';
 }
@@ -1031,7 +1034,7 @@ function panelFeats(): string {
 
 function autoSpeedNote(): string {
   const s = game.state.settings;
-  return `×${s.autoSpeed.toFixed(2)} — ${(game.d.tickRate * s.autoSpeed).toFixed(1)} act/s`;
+  return `×${s.autoSpeed.toFixed(2)} · ${(game.d.tickRate * s.autoSpeed).toFixed(1)}/s`;
 }
 
 function panelSettings(): string {
@@ -1047,10 +1050,6 @@ function panelSettings(): string {
     ${toggle('Damage numbers', s.settings.particles, 'toggle-particles')}
     ${toggle('CRT filter', s.settings.crtFilter, 'toggle-crt',
       'Phosphor and curved glass: heavy scanlines, glow, vignette and a whisper of color fringing. Pure vanity.')}
-    <div class="setting-row" data-tip="Throttle the autopilot below its full unlocked rate — you bought the speed, you choose how much of it to watch. Applies to autopilot and click-to-move.">
-      <span>Autopilot speed <span class="h3-note" id="auto-speed-note">${autoSpeedNote()}</span></span>
-      <input type="range" id="auto-speed" min="25" max="100" step="5" value="${Math.round(s.settings.autoSpeed * 100)}">
-    </div>
     ${toggle('Auto-equip loot', s.settings.autoEquip, 'toggle-autoequip',
       'When on, looted items the vessel can wield are equipped automatically when clearly better (+5%).')}
     ${game.qolUnlocked('tithe') ? `<div class="setting-row" data-tip="Unequipped loot below this rarity is scrapped on pickup. Protected rarities are always safe.">
@@ -1092,7 +1091,8 @@ function panelSettings(): string {
       <div class="stat"><span>Best depth</span><b>${s.bestDepth}</b></div>
       <div class="stat"><span>Bosses slain</span><b>${fmt(s.bossesSlain)}</b></div>
       <div class="stat"><span>Lifetime gold</span><b>${fmt(s.goldLifetime)}</b></div>
-      <div class="stat"><span>Relics found</span><b>${s.relicsFound}/${RELICS.length}</b></div>
+      <div class="stat" data-tip="How many of the ${RELICS.length} relics in the catalog you have ever held, across every Reaping."><span>Distinct relics</span><b>${s.relicsSeen.length}/${RELICS.length}</b></div>
+      <div class="stat" data-tip="Every relic drop ever claimed — Reapings reclaim relics, so the same one can be found again."><span>Relics claimed</span><b>${fmt(s.relicsFound)}</b></div>
       <div class="stat"><span>Minions raised</span><b>${fmt(s.minionsRaised)}</b></div>
       <div class="stat"><span>Champions slain</span><b>${fmt(s.championsSlain)}</b></div>
       <div class="stat"><span>Wardens slain</span><b>${fmt(s.wardensSlain)}</b></div>
