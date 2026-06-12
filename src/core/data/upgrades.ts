@@ -31,6 +31,10 @@ export const BONE_UPGRADES: UpgradeDef[] = [
   {
     id: 'vigor', pool: 'bones', name: 'Marrow Vigor',
     desc: 'Pack the vessel’s bones with stolen marrow. +14% max HP per level (compounding).',
+    // bone-scaling phase 2 note: mirroring ferocity's 1.28 cost (and the
+    // 1.22 half-step) shoved the wall expedition to the d15 gate edge while
+    // barely moving the ATK-vs-monsterHP race - HP is the survivability
+    // leg, not the runaway one. Cost stays 1.17 by measurement.
     base: 12, growth: 1.17, max: Infinity,
     eff: (l) => Math.pow(1.14, l),
     effDesc: (l) => `HP ×${Math.pow(1.14, l).toFixed(2)}`,
