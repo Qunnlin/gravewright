@@ -1065,15 +1065,23 @@ function panelReap(): string {
 function panelFeats(): string {
   const s = game.state;
   const done = Object.keys(s.achievements).length;
+  // easter-egg feats stay invisible until earned; one marker counts them
+  const shown = ACHIEVEMENTS.filter((a) => !a.hidden || s.achievements[a.id]);
+  const hiddenLeft = ACHIEVEMENTS.length - shown.length;
   return `
     <h2>Feats</h2>
     <div class="hint">${done}/${ACHIEVEMENTS.length} feats. Each grants +2% souls, forever.</div>
     <div class="feats-grid">
-      ${ACHIEVEMENTS.map((a) => `
+      ${shown.map((a) => `
         <div class="feat ${s.achievements[a.id] ? 'done' : ''}" title="${esc(a.desc)}">
           <span class="feat-name">${esc(a.name)}</span>
           <span class="feat-desc">${esc(a.desc)}</span>
         </div>`).join('')}
+      ${hiddenLeft > 0 ? `
+        <div class="feat feat-hidden">
+          <span class="feat-name">? ×${hiddenLeft}</span>
+          <span class="feat-desc">hidden ${hiddenLeft === 1 ? 'feat' : 'feats'} — the crypt keeps some secrets</span>
+        </div>` : ''}
     </div>
   `;
 }

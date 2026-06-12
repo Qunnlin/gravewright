@@ -901,6 +901,8 @@ main {
 }
 .feat.done { opacity: 1; border-color: #4a4022; box-shadow: 0 0 10px rgba(255,238,136,0.1); }
 .feat-name { display: block; font-weight: 700; font-size: 11.5px; color: #ffee88; }
+.feat.feat-hidden { opacity: 0.5; border-style: dashed; }
+.feat.feat-hidden .feat-name { color: var(--muted); }
 .feat.done .feat-name::before { content: '★ '; }
 .feat-desc { font-size: 10px; color: var(--muted); }
 
