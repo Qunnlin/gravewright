@@ -583,9 +583,13 @@ main {
 }
 .tab:hover { color: var(--text); }
 
-/* six tabs must fit a 340px rail: tighten the type before it overflows */
-@media (max-width: 1500px) {
-  .tab { font-size: 10px; letter-spacing: 0.5px; padding: 8px 2px 7px; }
+.tab .tab-icon { display: none; font-size: 14px; line-height: 1; }
+
+/* in the squeeze band (the rail at/near its 340px minimum, or very narrow
+   stacked screens) the labels can't fit six tabs — glyphs take over */
+@media (max-width: 1460px) and (min-width: 1241px), (max-width: 700px) {
+  .tab .tab-label { display: none; }
+  .tab .tab-icon { display: inline; }
 }
 .tab.active {
   color: #efe9ff;

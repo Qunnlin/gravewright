@@ -29,13 +29,13 @@ let renderQueued = false;
 /** autopilot state to restore after the trial-offer pause */
 let trialWasAuto = true;
 
-const TABS: { id: string; label: string }[] = [
-  { id: 'vessel', label: 'Vessel' },
-  { id: 'necro', label: 'Necromancy' },
-  { id: 'crypt', label: 'Crypt' },
-  { id: 'reap', label: 'Reaping' },
-  { id: 'codex', label: 'Codex' },
-  { id: 'settings', label: 'Settings' },
+const TABS: { id: string; label: string; icon: string }[] = [
+  { id: 'vessel', label: 'Vessel', icon: '@' },
+  { id: 'necro', label: 'Necromancy', icon: '✦' },
+  { id: 'crypt', label: 'Crypt', icon: '∴' },
+  { id: 'reap', label: 'Reaping', icon: '✠' },
+  { id: 'codex', label: 'Codex', icon: '❧' },
+  { id: 'settings', label: 'Settings', icon: '⚙' },
 ];
 
 const $ = (id: string) => document.getElementById(id)!;
@@ -49,7 +49,7 @@ export function initUI(g: Game): void {
   game = g;
 
   $('tabs').innerHTML = TABS.map(
-    (t) => `<button class="tab" data-act="tab" data-id="${t.id}">${t.label}<span class="badge" id="badge-${t.id}"></span></button>`,
+    (t) => `<button class="tab" data-act="tab" data-id="${t.id}" title="${t.label}"><span class="tab-icon">${t.icon}</span><span class="tab-label">${t.label}</span><span class="badge" id="badge-${t.id}"></span></button>`,
   ).join('');
 
   document.body.addEventListener('click', onClick);
