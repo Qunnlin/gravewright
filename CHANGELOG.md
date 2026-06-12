@@ -9,6 +9,16 @@ and bumps `src/core/version.ts` + `package.json`.
 
 ## [Unreleased]
 
+## [1.5.1] — 2026-06-13
+
+### Balance
+
+- The Peddler's curios were priced like consumables for run-long effects
+  ("a bit cheap for being that powerful"): Wrapped Parcel 10→18 goldPiles,
+  Grave Compass 14→45, Lantern Oil 8→32, Goblin Musk 12→55 (it must beat
+  the goblin's own 12-pile burst or it's an arbitrage machine), Sealed
+  Draught 10→25. The per-sale doubling stays. (#43)
+
 ## [1.5.0] — 2026-06-13 · The Private Stock
 
 ### Added
