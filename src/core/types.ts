@@ -255,6 +255,10 @@ export interface GameState {
   auto: boolean;
   /** Contextual tutorial steps already shown. */
   tutorial: Record<string, boolean>;
+  /** Codex unlock counters, keyed `mon:<key>` / `ench:<id>` / `set:<id>` /
+   *  `bio:<id>` / `curse:<id>` — kills, champion kills, pieces found,
+   *  biomes entered, pacts sworn. Drives the in-game wiki's tiers. */
+  codex: Record<string, number>;
   /** EMA earn rates, per minute (for offline progress) */
   rates: { souls: number; bones: number };
   lastSeen: number;

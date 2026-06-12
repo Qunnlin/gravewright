@@ -132,6 +132,14 @@ export function heroEffectiveHp(maxHp: number, def: number, depth: number): numb
   return maxHp * Math.min((def + k) / k, 1 / DEF_MIN_DMG_FRAC);
 }
 
+/** ---- codex ---- */
+
+/** Kills of one monster kind before the codex writes its full nature
+ *  (stats + special notes); below this the bestiary shows a "slay N more"
+ *  countdown. Low enough to reward early curiosity, high enough that the
+ *  reveal feels earned. */
+export const CODEX_STATS_AT = 10;
+
 /** ---- statuses (previously hardcoded in game.ts; playtest 2026-06-12:
  *  "buffs/debuffs should last longer" — durations raised so the new status
  *  chips have time to matter) ---- */

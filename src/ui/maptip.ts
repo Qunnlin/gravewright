@@ -2,12 +2,12 @@
  *  loot amounts and landmark details. Rides the shared #tooltip div via the
  *  programmatic API in tooltip.ts; anchored [data-tip] tooltips always win. */
 
-import { TILE, type Floor, type Monster, type MonsterSpecial } from '../core/types';
+import { TILE, type Floor, type Monster } from '../core/types';
 import type { Game } from '../core/game';
 import { CELL } from './render';
 import { showTipAt, hideTip } from './tooltip';
 import { modalOpen } from './ui';
-import { monsterDefByKey } from '../core/data/monsters';
+import { SPECIAL_NOTES, monsterDefByKey } from '../core/data/monsters';
 import { biomeById } from '../core/data/biomes';
 import { enchantById } from '../core/data/enchants';
 import { classById } from '../core/data/classes';
@@ -21,20 +21,6 @@ function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
-
-const SPECIAL_NOTES: Record<MonsterSpecial, string> = {
-  fast: 'Fast — acts twice per hero turn',
-  slow: 'Slow — acts every other turn',
-  poison: 'Poisonous — its hits afflict a poison dot',
-  burn: 'Burning — its hits afflict a burn dot',
-  vampiric: 'Vampiric — heals for 60% of damage dealt',
-  ranged: 'Ranged — strikes from up to 3 tiles with line of sight',
-  regen: 'Regenerating — recovers 3% max HP per turn',
-  summon: 'Summoner — raises lesser dead mid-fight',
-  thief: 'Thief — steals gold on hit',
-  armored: 'Armored — bonus defense baked in',
-  deadly: 'Deadly — 20% chance to crit',
-};
 
 let canvasEl: HTMLCanvasElement;
 /** last cursor position while over the canvas; null = not hovering */

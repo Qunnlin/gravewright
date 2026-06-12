@@ -9,7 +9,10 @@ import { BONE_UPGRADES, SOUL_UPGRADES, ESSENCE_UPGRADES, MINIONS, minionLevelCos
 import { CLASSES, classById } from '../core/data/classes';
 import { CURSES } from '../core/data/curses';
 import { RELICS, relicById } from '../core/data/relics';
-import { setById } from '../core/data/sets';
+import { SETS, setById } from '../core/data/sets';
+import { BIOME_MONSTERS, MONSTERS, SPECIAL_NOTES } from '../core/data/monsters';
+import { ENCHANTS } from '../core/data/enchants';
+import { BIOMES, biomeById } from '../core/data/biomes';
 import { ACHIEVEMENTS } from '../core/data/achievements';
 import {
   AFFIX_DEFS, RARITY_COLORS, RARITY_NAMES, WEAPON_KINDS, describeItem,
@@ -32,6 +35,7 @@ const TABS: { id: string; label: string }[] = [
   { id: 'crypt', label: 'Crypt' },
   { id: 'reap', label: 'Reaping' },
   { id: 'feats', label: 'Feats' },
+  { id: 'codex', label: 'Codex' },
   { id: 'settings', label: 'Settings' },
 ];
 
@@ -618,6 +622,7 @@ function renderPanel(): void {
     case 'crypt': html = panelCrypt(); break;
     case 'reap': html = panelReap(); break;
     case 'feats': html = panelFeats(); break;
+    case 'codex': html = panelCodex(); break;
     case 'settings': html = panelSettings(); break;
   }
   panel.innerHTML = html;
@@ -1070,6 +1075,175 @@ function panelFeats(): string {
           <span class="feat-desc">${esc(a.desc)}</span>
         </div>`).join('')}
     </div>
+  `;
+}
+
+/** ---------------- the codex ---------------- */
+
+function codexCount(key: string): number {
+  return game.state.codex[key] ?? 0;
+}
+
+function codexMech(name: string, body: string): string {
+  return `<div class="card"><div class="card-head"><span class="card-name">${name}</span></div>
+    <div class="card-desc">${body}</div></div>`;
+}
+
+function panelCodex(): string {
+  const s = game.state;
+
+  // --- mechanics: rendered from live balance constants, so it never lies ---
+  const mech: string[] = [];
+  mech.push(codexMech('The Death Economy',
+    `Vessels are mined, not mourned. A death pays souls by depth — steeply: a depth-20 death is worth roughly ×${(B.soulsOnDeath(20, 0) / B.soulsOnDeath(10, 0)).toFixed(1)} a depth-10 one. Kills add a trickle on top.`));
+  mech.push(codexMech('The Reaping',
+    `Collapse the crypt to distill this cycle's souls into permanent essence — the first ❖ asks ${fmt(B.REAP_SOUL_BASE)} souls. Every Reaping raises the depth the next one demands by 2.`));
+  mech.push(codexMech('Crypt Wrath',
+    `Hoard souls past reap-readiness and the crypt resents it: new floors gain +${Math.round((B.cryptWrath(B.REAP_SOUL_BASE * 2) - 1) * 100)}% monster HP and ATK per extra threshold harvested. Reaping appeases it.`));
+  mech.push(codexMech('The Ward',
+    'Defense weaves a sheen of grave-light over your health — the brighter it glows, the more of every blow it eats. The dark below dulls it, a sliver of every hit always lands, and poison or burn slip straight through.'));
+  mech.push(codexMech('Blessings',
+    `A shrine heals fully and blesses: +25% damage for ${B.BLESS_TURNS} turns, for gold. Stepping onto one deliberately drinks even at full health.`));
+  if (s.trialsSeen > 0) {
+    mech.push(codexMech('The Sealed Hall',
+      `An opt-in wager: ${B.TRIAL_TURNS} turns of onslaught with no stairs, then the Avatar. Victory mints a Vestige; defeat or flight forfeits ${Math.round(B.TRIAL_FORFEIT * 100)}% of held souls, and a dead vessel pays nothing.`));
+  }
+  if (BIOMES.some((b) => codexCount('bio:' + b.id) > 0)) {
+    mech.push(codexMech('Strange Districts',
+      `Rarely, deep down, the crypt stops being honest stone for ${B.BIOME_FLOORS} floors — richer pickings, stranger natives. After one passes, ${B.BIOME_COOLDOWN} floors of stone before another may begin.`));
+  }
+
+  // --- bestiary ---
+  const allMon = [...MONSTERS, ...BIOME_MONSTERS];
+  const monKnown = allMon.filter((m) => codexCount('mon:' + m.key) > 0).length;
+  const bestiary = allMon.map((m) => {
+    const kills = codexCount('mon:' + m.key);
+    if (kills === 0) {
+      return `<div class="codex-row codex-locked"><span class="codex-glyph">?</span>
+        <span class="codex-body"><span class="codex-name">— unmet —</span>
+        <span class="codex-flavor">something still breathing in the dark</span></span></div>`;
+    }
+    const range = m.window === Infinity ? `${m.minDepth}+` : `${m.minDepth}–${m.minDepth + m.window}`;
+    const biomeTag = m.biome ? ` <span class="kind-chip" data-tip="${esc(`Native to ${biomeById(m.biome)!.name}.`)}">${esc(biomeById(m.biome)!.name.replace(/^the /, ''))}</span>` : '';
+    const stats = kills >= B.CODEX_STATS_AT
+      ? `<span class="codex-stats">HP ×${m.hpMult} · ATK ×${m.atkMult} · tier ${m.tier} · depths ${range}</span>` +
+        (m.specials.length ? `<span class="codex-stats">${m.specials.map((sp) => esc(SPECIAL_NOTES[sp])).join(' · ')}</span>` : '')
+      : `<span class="codex-stats codex-more">slay ${B.CODEX_STATS_AT - kills} more to learn its nature</span>`;
+    return `<div class="codex-row">
+      <span class="codex-glyph" style="color:${m.color}">${esc(m.glyph)}</span>
+      <span class="codex-body">
+        <span class="codex-name">${esc(m.name)} <small class="codex-count">×${fmt(kills)}</small>${biomeTag}</span>
+        <span class="codex-flavor">${esc(m.flavor)}</span>
+        ${stats}
+      </span></div>`;
+  }).join('');
+
+  // --- champions ---
+  const enchKnown = ENCHANTS.filter((e) => codexCount('ench:' + e.id) > 0).length;
+  const champions = ENCHANTS.map((e) => {
+    const n = codexCount('ench:' + e.id);
+    if (n === 0) {
+      return `<div class="codex-row codex-locked"><span class="codex-glyph">◆</span>
+        <span class="codex-body"><span class="codex-name">— unmet —</span></span></div>`;
+    }
+    return `<div class="codex-row">
+      <span class="codex-glyph" style="color:var(--champion)">◆</span>
+      <span class="codex-body">
+        <span class="codex-name">${esc(e.prefix)} <small class="codex-count">×${fmt(n)}</small></span>
+        <span class="codex-flavor">${esc(e.desc)}</span>
+      </span></div>`;
+  }).join('');
+
+  // --- vestige sets ---
+  const setsKnown = SETS.filter((st) => codexCount('set:' + st.id) > 0).length;
+  const vestiges = SETS.map((st) => {
+    const n = codexCount('set:' + st.id);
+    if (n === 0) {
+      return `<div class="codex-row codex-locked"><span class="codex-glyph">◈</span>
+        <span class="codex-body"><span class="codex-name">— a sealed set —</span>
+        <span class="codex-flavor">its pieces wait below</span></span></div>`;
+    }
+    const pieces = st.pieces.map((pp) =>
+      `<span class="codex-stats">✦ ${esc(pp.powerName)} — ${esc(pp.powerDesc)}</span>`).join('');
+    return `<div class="codex-row">
+      <span class="codex-glyph rainbow-text">◈</span>
+      <span class="codex-body">
+        <span class="codex-name rainbow-text">${esc(st.name)}</span>
+        <span class="codex-flavor">${esc(st.flavor)}</span>
+        ${pieces}
+        <span class="codex-stats">[2] ${esc(st.bonus2)} · [3] ${esc(st.bonus3)}</span>
+      </span></div>`;
+  }).join('');
+
+  // --- relics (relicsSeen is the persistent distinct set) ---
+  const relics = RELICS.map((r) => {
+    if (!s.relicsSeen.includes(r.id)) {
+      return `<div class="codex-row codex-locked"><span class="codex-glyph">❖</span>
+        <span class="codex-body"><span class="codex-name">— unclaimed —</span></span></div>`;
+    }
+    return `<div class="codex-row">
+      <span class="codex-glyph" style="color:var(--essence)">❖</span>
+      <span class="codex-body">
+        <span class="codex-name">${esc(r.name)}</span>
+        <span class="codex-flavor">${esc(r.desc)}</span>
+      </span></div>`;
+  }).join('');
+
+  // --- pacts (only once Forbidden Rites is known) ---
+  const pacts = game.cursesUnlocked() ? CURSES.map((c) => {
+    const n = codexCount('curse:' + c.id);
+    if (n === 0) {
+      return `<div class="codex-row codex-locked"><span class="codex-glyph">✠</span>
+        <span class="codex-body"><span class="codex-name">— unsworn —</span></span></div>`;
+    }
+    return `<div class="codex-row">
+      <span class="codex-glyph" style="color:var(--danger)">✠</span>
+      <span class="codex-body">
+        <span class="codex-name">${esc(c.name)} <small class="codex-count">sworn ×${fmt(n)}</small></span>
+        <span class="codex-flavor">${esc(c.desc)}</span>
+      </span></div>`;
+  }).join('') : '';
+
+  // --- districts ---
+  const districts = BIOMES.map((b) => {
+    const n = codexCount('bio:' + b.id);
+    if (n === 0) {
+      return `<div class="codex-row codex-locked"><span class="codex-glyph">∿</span>
+        <span class="codex-body"><span class="codex-name">— uncharted —</span>
+        <span class="codex-flavor">the crypt holds stranger districts</span></span></div>`;
+    }
+    const hooks = [
+      b.goldMult > 1 ? `gold ×${b.goldMult}` : '',
+      b.boneMult > 1 ? `bones ×${b.boneMult}` : '',
+      b.chestsSpecial ? `${esc(b.cacheName.replace('▣ ', ''))}s hold epic+` : '',
+    ].filter(Boolean).join(' · ');
+    return `<div class="codex-row">
+      <span class="codex-glyph" style="color:${b.cacheColor}">∿</span>
+      <span class="codex-body">
+        <span class="codex-name">${esc(b.name)} <small class="codex-count">entered ×${fmt(n)}</small></span>
+        <span class="codex-flavor">${esc(b.enterOmen)}</span>
+        <span class="codex-stats">depth ${b.minDepth}+ · ${hooks}</span>
+      </span></div>`;
+  }).join('');
+
+  return `
+    <h2>Codex</h2>
+    <div class="hint">The crypt keeps its own ledger. What you have slain, found,
+    sworn and survived is written here — the rest stays in the dark.</div>
+    <h3>Mechanics</h3>
+    ${mech.join('')}
+    <h3>Bestiary <span class="h3-note">${monKnown}/${allMon.length}</span></h3>
+    ${bestiary}
+    <h3>Champions <span class="h3-note">${enchKnown}/${ENCHANTS.length}</span></h3>
+    <div class="hint">Enchanted rares glow blue and carry their natures as prefixes.</div>
+    ${champions}
+    <h3>Vestiges <span class="h3-note">${setsKnown}/${SETS.length}</span></h3>
+    ${vestiges}
+    <h3>Relics <span class="h3-note">${s.relicsSeen.length}/${RELICS.length}</span></h3>
+    ${relics}
+    ${game.cursesUnlocked() ? `<h3>Pacts</h3>${pacts}` : ''}
+    <h3>Districts <span class="h3-note">${BIOMES.filter((b) => codexCount('bio:' + b.id) > 0).length}/${BIOMES.length}</span></h3>
+    ${districts}
   `;
 }
 

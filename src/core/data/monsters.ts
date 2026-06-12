@@ -64,7 +64,22 @@ export const BIOME_MONSTERS: MonsterDef[] = [
   { key: 'marrowtyrant', name: 'Marrow Tyrant', glyph: 'Ψ', color: '#ffb44e', minDepth: 100, window: Infinity, hpMult: 2.8, atkMult: 1.9, defMult: 3, tier: 6, specials: ['deadly', 'regen'],   biome: 'city', flavor: 'It taxes the dead. The rates are criminal.' },
 ];
 
-/** Def lookup across every spawn table (UI flavor, codex-to-be). */
+/** Plain-language notes for monster specials (hover tips + the codex). */
+export const SPECIAL_NOTES: Record<MonsterSpecial, string> = {
+  fast: 'Fast — acts twice per hero turn',
+  slow: 'Slow — acts every other turn',
+  poison: 'Poisonous — its hits afflict a poison dot',
+  burn: 'Burning — its hits afflict a burn dot',
+  vampiric: 'Vampiric — heals for 60% of damage dealt',
+  ranged: 'Ranged — strikes from up to 3 tiles with line of sight',
+  regen: 'Regenerating — recovers 3% max HP per turn',
+  summon: 'Summoner — raises lesser dead mid-fight',
+  thief: 'Thief — steals gold on hit',
+  armored: 'Armored — bonus defense baked in',
+  deadly: 'Deadly — 20% chance to crit',
+};
+
+/** Def lookup across every spawn table (UI flavor, the codex). */
 export function monsterDefByKey(key: string): MonsterDef | undefined {
   return MONSTERS.find((m) => m.key === key) ?? BIOME_MONSTERS.find((m) => m.key === key);
 }
