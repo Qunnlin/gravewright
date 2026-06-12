@@ -9,6 +9,14 @@ and bumps `src/core/version.ts` + `package.json`.
 
 ## [Unreleased]
 
+### Added
+
+- Automatic tags & releases on both remotes: every version bump that lands
+  on `main` is tagged `vX.Y.Z` by CI; minor and major versions also get a
+  GitHub Release with their changelog section as notes. The GitLab mirror
+  (`.gitlab-ci.yml`) creates a Release per version (its job token can only
+  tag through the Releases API). (#32)
+
 ## [1.1.1] — 2026-06-12
 
 ### Fixed
