@@ -565,6 +565,7 @@ main {
 
 .tab {
   flex: 1;
+  min-width: 0;
   position: relative;
   background: transparent;
   color: var(--muted);
@@ -581,6 +582,11 @@ main {
   transition: color 0.15s;
 }
 .tab:hover { color: var(--text); }
+
+/* six tabs must fit a 340px rail: tighten the type before it overflows */
+@media (max-width: 1500px) {
+  .tab { font-size: 10px; letter-spacing: 0.5px; padding: 8px 2px 7px; }
+}
 .tab.active {
   color: #efe9ff;
   background: linear-gradient(180deg, #16121f, var(--bg-panel));

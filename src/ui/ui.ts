@@ -34,7 +34,6 @@ const TABS: { id: string; label: string }[] = [
   { id: 'necro', label: 'Necromancy' },
   { id: 'crypt', label: 'Crypt' },
   { id: 'reap', label: 'Reaping' },
-  { id: 'feats', label: 'Feats' },
   { id: 'codex', label: 'Codex' },
   { id: 'settings', label: 'Settings' },
 ];
@@ -621,7 +620,6 @@ function renderPanel(): void {
     case 'necro': html = panelNecro(); break;
     case 'crypt': html = panelCrypt(); break;
     case 'reap': html = panelReap(); break;
-    case 'feats': html = panelFeats(); break;
     case 'codex': html = panelCodex(); break;
     case 'settings': html = panelSettings(); break;
   }
@@ -1062,15 +1060,17 @@ function panelReap(): string {
   `;
 }
 
-function panelFeats(): string {
+/** Feats live inside the Codex (records belong in the ledger — and seven
+ *  tabs overflowed smaller screens). */
+function featsSection(): string {
   const s = game.state;
   const done = Object.keys(s.achievements).length;
   // easter-egg feats stay invisible until earned; one marker counts them
   const shown = ACHIEVEMENTS.filter((a) => !a.hidden || s.achievements[a.id]);
   const hiddenLeft = ACHIEVEMENTS.length - shown.length;
   return `
-    <h2>Feats</h2>
-    <div class="hint">${done}/${ACHIEVEMENTS.length} feats. Each grants +2% souls, forever.</div>
+    <h3>Feats <span class="h3-note">${done}/${ACHIEVEMENTS.length}</span></h3>
+    <div class="hint">Each feat grants +2% souls, forever.</div>
     <div class="feats-grid">
       ${shown.map((a) => `
         <div class="feat ${s.achievements[a.id] ? 'done' : ''}" title="${esc(a.desc)}">
@@ -1240,6 +1240,7 @@ function panelCodex(): string {
     sworn and survived is written here — the rest stays in the dark.</div>
     <h3>Mechanics</h3>
     ${mech.join('')}
+    ${featsSection()}
     <h3>Bestiary <span class="h3-note">${monKnown}/${allMon.length}</span></h3>
     ${bestiary}
     <h3>Champions <span class="h3-note">${enchKnown}/${ENCHANTS.length}</span></h3>
