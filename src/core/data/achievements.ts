@@ -7,6 +7,9 @@ export interface AchievementDef {
   id: string;
   name: string;
   desc: string;
+  /** easter-egg feats: invisible until earned; the panel shows only a
+   *  "N hidden feats" marker so their conditions stay secret */
+  hidden?: boolean;
   check: (g: GameState) => boolean;
 }
 
@@ -44,7 +47,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'trial1',      name: 'Oathbound',          desc: 'Conquer the Trial of the Sealed Hall.', check: (g) => g.trialsWon >= 1 },
   { id: 'trial5',      name: 'Keeper of Wagers',   desc: 'Conquer 5 Trials.',                    check: (g) => g.trialsWon >= 5 },
   {
-    id: 'genuset', name: 'Defense in Depth', desc: 'Wear the complete genuGate.',
+    id: 'genuset', name: 'Defense in Depth', desc: 'Wear the complete genuGate.', hidden: true,
     check: (g) => {
       const gear = g.run?.gear ?? g.keptGear;
       return (['weapon', 'armor', 'charm'] as const)
