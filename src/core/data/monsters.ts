@@ -74,13 +74,29 @@ export const BOSS_NAMES = [
   'The Nameless Below',
 ];
 
+/** Proper roman numerals — "Reborn V", not "Reborn IIIII". */
+function roman(n: number): string {
+  const table: [number, string][] = [
+    [1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'],
+    [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I'],
+  ];
+  let out = '';
+  for (const [v, sym] of table) {
+    while (n >= v) {
+      out += sym;
+      n -= v;
+    }
+  }
+  return out;
+}
+
 /** Bosses past the named list get numbered epithets. */
 export function bossName(depth: number): string {
   const idx = Math.floor(depth / 5) - 1;
   if (idx < BOSS_NAMES.length) return BOSS_NAMES[idx];
   const cycle = BOSS_NAMES[idx % BOSS_NAMES.length];
   const aeon = Math.floor(idx / BOSS_NAMES.length) + 1;
-  return `${cycle}, Reborn ${'I'.repeat(Math.min(aeon, 5))}`;
+  return `${cycle}, Reborn ${roman(aeon)}`;
 }
 
 export function eligibleMonsters(depth: number, biome?: 'server'): MonsterDef[] {

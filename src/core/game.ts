@@ -64,6 +64,7 @@ export function defaultState(): GameState {
     strategy: 'balanced',
     curses: {},
     relics: [],
+    relicsSeen: [],
     keptGear: { weapon: null, armor: null, charm: null },
     inventory: [],
     run: null,
@@ -1581,6 +1582,7 @@ export class Game {
     const relic = pick(unowned);
     s.relics.push(relic.id);
     s.relicsFound++;
+    if (!s.relicsSeen.includes(relic.id)) s.relicsSeen.push(relic.id);
     bus.emit({ type: 'relic', id: relic.id });
     bus.emit({ type: 'sound', name: 'relic' });
     log(`❖ RELIC: ${relic.name} — ${relic.desc}`, 'relic');

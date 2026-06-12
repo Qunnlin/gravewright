@@ -121,6 +121,20 @@ describe('save round-trip', () => {
     expect(decodeSave(btoa(JSON.stringify(enabled))).settings.crtFilter).toBe(true);
   });
 
+  it('sanitizes relicsSeen: dedupes, drops unknown ids, backfills held relics', () => {
+    const raw = {
+      v: 1,
+      relics: ['femur'],
+      relicsSeen: ['chalice', 'chalice', 'not-a-relic', 42],
+    };
+    const decoded = decodeSave(btoa(JSON.stringify(raw)));
+    expect(decoded.relicsSeen.sort()).toEqual(['chalice', 'femur']);
+    // pre-relicsSeen saves: held relics count as seen
+    const old = { v: 1, relics: ['femur', 'chalice'] };
+    expect(decodeSave(btoa(JSON.stringify(old))).relicsSeen.sort())
+      .toEqual(['chalice', 'femur']);
+  });
+
   it('clamps the autopilot speed throttle to [0.25, 1]', () => {
     const cases: [unknown, number][] = [
       [undefined, 1], ['fast', 1], [0, 0.25], [Number.NaN, 1],
