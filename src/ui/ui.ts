@@ -491,6 +491,8 @@ export function uiFrame(): void {
     autoBtn.dataset.tip = 'Toggle autopilot (P). Movement keys seize manual control.';
   }
 
+  // the throttle only matters while the autopilot is driving
+  $('speed-wrap').style.display = s.auto && game.autoUnlocked() ? '' : 'none';
   const speedNote = autoSpeedNote();
   const noteEl = $('auto-speed-note');
   if (noteEl.textContent !== speedNote) noteEl.textContent = speedNote;
@@ -784,19 +786,23 @@ function panelVessel(): string {
   const d = game.d;
   const run = s.run;
   const klass = classById(run?.klass ?? s.curClass);
-  // what the armor actually does against the local monsters' raw swing
+  // defense is shown as EFFECTIVE HP vs the local depth — linear and
+  // unbounded in def, so every purchased point visibly moves it (never %)
   const mitDepth = Math.max(1, run?.depth ?? game.d.startDepth);
-  const localRaw = B.monsterAtk(mitDepth);
-  const soaked = Math.round(localRaw - B.heroDamageAfterDef(localRaw, d.def));
-  const soakPct = Math.round((soaked / localRaw) * 100);
+  const eHp = B.heroEffectiveHp(d.maxHp, d.def, mitDepth);
+  const hitsToDie = Math.max(1, Math.floor(eHp / B.monsterAtk(mitDepth)));
 
   const statRows: [string, string, string][] = [
     ['Max HP', fmt(d.maxHp),
       'The vessel’s health. Refilled on summon; partially restored on descent and level-up.'],
     ['Attack', fmt(Math.round(d.atk)),
       'Damage per strike, before the enemy’s mitigation. Includes upgrades, class, gear, level and essence.'],
-    ['Defense', `${fmt(Math.round(d.def))} soak (−${soakPct}%)`,
-      `Armor soaks a flat ${fmt(Math.round(d.def))} damage from every hit, but never more than ${Math.round(B.DEF_SOAK_CAP * 100)}% of the hit. Against a typical depth-${mitDepth} swing (~${fmt(Math.round(localRaw))}) that blocks ${fmt(soaked)} (−${soakPct}%). Deeper monsters swing harder, so the same armor soaks a smaller share.`],
+    ['Defense', fmt(Math.round(d.def)),
+      'Armor. Each point stretches your effective HP against the local monsters — see below. No amount makes you immortal: every hit always lands at least 1%.'],
+    ['Effective HP', fmt(Math.round(eHp)),
+      `What your ${fmt(d.maxHp)} HP is worth once depth-${mitDepth} monsters punch through your armor. Grows with EVERY point of defense, forever — but deeper monsters hit harder, so it shrinks as you descend.`],
+    ['Hits to die', fmt(hitsToDie),
+      `Typical depth-${mitDepth} swings your vessel can absorb before dying (before dodge, block, regen and healing).`],
     ['Crit', `${Math.round(d.crit)}% ×${d.critDmg}`,
       'Chance to strike for double damage.'],
     ['Speed', `${d.tickRate.toFixed(1)} act/s`,

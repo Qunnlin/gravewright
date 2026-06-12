@@ -204,9 +204,12 @@ export class Game {
           Math.max(1, this.eff('ferocity')) *
           klass.atkMult * eternal * levelMult * rmul('atkMult');
       })(),
+      // defense = base points × in-run multiplier × prestige multiplier —
+      // the three legs that let armor chase exponential enemy power forever
       def:
         (B.HERO_BASE_DEF + gearStat('def') + this.eff('bulwark')) *
-        Math.max(1, this.eff('soularmor')),
+        Math.max(1, this.eff('soularmor')) *
+        Math.max(1, this.eff('aegis')),
       crit: Math.min(95,
         B.HERO_BASE_CRIT + this.eff('sharpbone') + (klass.crit ?? 0) +
         relics.reduce((b, r) => b + (r!.crit ?? 0), 0) + gearStat('crit') +
@@ -1493,7 +1496,7 @@ export class Game {
       const dist = Math.abs(m.x - this.heroPos.x) + Math.abs(m.y - this.heroPos.y);
       if (dist <= 1 && !this.devInvulnerable) {
         const blast = Math.max(1,
-          B.heroDamageAfterDef(B.monsterAtk(run.depth) * 1.6, this.d.def));
+          B.heroDamageAfterDef(B.monsterAtk(run.depth) * 1.6, this.d.def, run.depth));
         run.hp -= blast;
         bus.emit({ type: 'shake', power: 5 });
         bus.emit({ type: 'sound', name: 'hurt' });
@@ -1800,7 +1803,7 @@ export class Game {
     let raw = m.atk * rndf(1 - B.DMG_VARIANCE, 1 + B.DMG_VARIANCE);
     if (m.specials.includes('deadly') && chance(0.2)) raw *= 2;
 
-    let dmg = Math.max(1, B.heroDamageAfterDef(raw, d.def));
+    let dmg = Math.max(1, B.heroDamageAfterDef(raw, d.def, run.depth));
     dmg *= 1 - d.blockPct / 100;
     dmg = Math.max(1, dmg);
 

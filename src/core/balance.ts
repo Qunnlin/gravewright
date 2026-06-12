@@ -82,24 +82,46 @@ export function mitigation(def: number): number {
   return Math.min(0.8, def / (def + 35));
 }
 
-/** HERO defense, rebuilt from zero (2026-06-12, third round of playtest
- *  feedback — the MODEL was wrong, not the constants). Percentage mitigation
- *  (rational curves, PoE-armour-style) fails the legibility test in an
- *  incremental: +50 DEF moves a hidden percentage by an invisible amount,
- *  so every purchase "feels wasted". New model — FLAT SOAK, Grim-Dawn-style:
- *  every point of DEF removes one point of damage from every hit, but soak
- *  can never erase more than DEF_SOAK_CAP of a hit. Reads concretely on the
- *  panel ("soaks 124 damage per hit, up to half"), every purchase visibly
- *  grows the number, and the treadmill is automatic: monster ATK grows
- *  exponentially with depth, so the same DEF soaks an ever-smaller share.
- *  Cap 0.55: armor can at best take slightly more than half a hit — HP and healing carry the rest
- *  (0.75 let optimal frontier vessels shrug to monTTK 127, vs the report's
- *  bounded-threat assertion of ≤60). */
-export const DEF_SOAK_CAP = 0.55;
+/** HERO defense — the eHP system (designed by the owner, 2026-06-12).
+ *  One stat, one ratio:
+ *
+ *    reduction = def / (def + K),  K = DEF_K_BASE · monsterAtk(depth)
+ *    damage    = max(raw · (1 − reduction), raw · DEF_MIN_DMG_FRAC)
+ *
+ *  K scales with local enemy POWER (not depth linearly), so the system is
+ *  scale-invariant: 100× defense vs 100× enemy damage = the same reduction
+ *  at depth 1 and depth 10,000 — a defensive build never silently decays.
+ *  The damage floor means no amount of armor is true immortality (every
+ *  hit lands ≥1%), so investing never stops mattering and there is no
+ *  invincible-then-one-shot cliff. The UI never shows % reduction — it
+ *  shows EFFECTIVE HP, which is linear and unbounded in defense, so every
+ *  purchased point visibly raises a number forever.
+ *
+ *  DEF_K_BASE = 1.5 derived from the tuning checklist: a fresh vessel's
+ *  first armor purchase (Ossified Hide 1 ≈ 2.2 DEF) vs depth-1 enemies
+ *  (monsterAtk(1) = 3.2, K = 4.8) sits at 2.2/7.0 ≈ 31% — inside the
+ *  prescribed 20–40% fresh-run band. (2.0 pushed the fresh post-reap
+ *  wall expedition down to depth 14, under the report's ≥15 gate.) */
+export const DEF_K_BASE = 1.5;
+export const DEF_MIN_DMG_FRAC = 0.01;
 
-/** Damage that gets through the hero's armor: flat soak, capped. */
-export function heroDamageAfterDef(raw: number, def: number): number {
-  return Math.max(raw * (1 - DEF_SOAK_CAP), raw - def);
+/** The defense pivot against the local population's power. */
+export function defenseK(depth: number): number {
+  return DEF_K_BASE * monsterAtk(depth);
+}
+
+/** Damage that gets through the hero's armor. */
+export function heroDamageAfterDef(raw: number, def: number, depth: number): number {
+  const k = defenseK(depth);
+  return Math.max(raw * (k / (def + k)), raw * DEF_MIN_DMG_FRAC);
+}
+
+/** Effective HP vs the local depth: maxHp stretched by armor. Linear and
+ *  unbounded in defense (the headline number the player sees), bounded
+ *  only by the damage floor. */
+export function heroEffectiveHp(maxHp: number, def: number, depth: number): number {
+  const k = defenseK(depth);
+  return maxHp * Math.min((def + k) / k, 1 / DEF_MIN_DMG_FRAC);
 }
 
 /** Ravenous Descent: floors collapse when the vessel out-damages their

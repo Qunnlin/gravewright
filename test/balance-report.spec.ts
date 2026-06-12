@@ -76,7 +76,7 @@ describe('balance report', () => {
       const wrath = game.wrath();
       const heroDmg = Math.max(1, d.atk * (1 - B.mitigation(B.monsterDef(e.depth))));
       const monDmg = Math.max(1,
-        B.heroDamageAfterDef(B.monsterAtk(e.depth) * wrath, d.def));
+        B.heroDamageAfterDef(B.monsterAtk(e.depth) * wrath, d.def, e.depth));
       probes.push({
         depth: e.depth,
         hTTK: Math.ceil((B.monsterHp(e.depth) * wrath) / heroDmg),
