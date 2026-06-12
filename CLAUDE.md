@@ -95,7 +95,10 @@ test/              vitest suites + browser-smoke.mjs + balance-report
   save-breaking or pillar changes — and bump `src/core/version.ts` (the
   single source of truth, shown in Settings) + `package.json`, then date the
   Unreleased heading. `GameState.v` is the save schema version; never
-  conflate the two.
+  conflate the two. Tags & GitHub releases are AUTOMATED: on every push to
+  main, `.github/workflows/release.yml` tags `vX.Y.Z` if new, and publishes
+  a GitHub Release (notes = that version's changelog section) for minor and
+  major versions. Never tag manually.
 
 ## Conventions
 
