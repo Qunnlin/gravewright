@@ -571,6 +571,7 @@ export class Game {
     // Ravenous fall across a boundary still gets its omen
     const prevBand = Game.bandOf(run.floor.depth);
     const prevBiome = run.floor.biome;
+    const prevDepth = run.floor.depth;
 
     run.depth++;
     if (run.depth > s.bestDepth) s.bestDepth = run.depth;
@@ -587,6 +588,14 @@ export class Game {
     if (classById(run.klass).revealMap) run.floor.seen.fill(1);
     bus.emit({ type: 'descend', depth: run.depth });
     log(`▼ Depth ${run.depth}. The air forgets warmth.`, 'descend');
+    // the deeper dark thins the ward — say it plainly, in passing
+    if (this.d.def > 0) {
+      const before = Math.round(B.heroEffectiveHp(this.d.maxHp, this.d.def, prevDepth) - this.d.maxHp);
+      const after = Math.round(B.heroEffectiveHp(this.d.maxHp, this.d.def, run.depth) - this.d.maxHp);
+      if (before > after && before > 0) {
+        log(`✛ The ward thins: ${fmt(before)} → ${fmt(after)}.`, 'system');
+      }
+    }
     const newBand = Game.bandOf(run.depth);
     if (newBand > prevBand) {
       const omen = Game.BAND_OMENS[newBand];
