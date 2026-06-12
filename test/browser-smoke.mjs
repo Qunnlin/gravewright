@@ -56,7 +56,7 @@ const px = await page.evaluate(() => {
 ok('canvas has visible content', px > 50);
 
 // tabs all render
-for (const tab of ['necro', 'crypt', 'reap', 'feats', 'settings', 'vessel']) {
+for (const tab of ['necro', 'crypt', 'reap', 'codex', 'settings', 'vessel']) {
   await page.click(`[data-act="tab"][data-id="${tab}"]`);
   await page.waitForTimeout(120);
   const text = (await page.locator('#panel').textContent()) ?? '';
