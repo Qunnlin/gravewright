@@ -38,7 +38,9 @@ export const BONE_UPGRADES: UpgradeDef[] = [
   {
     id: 'ferocity', pool: 'bones', name: 'Grafted Sinew',
     desc: 'Sinew from things that died furious. +13% attack per level (compounding).',
-    base: 12, growth: 1.17, max: Infinity,
+    // cost growth 1.17->1.28 (bone-scaling phase 2): levels-per-minute was
+    // pinned near zero-wait all cycle; the price must outpace bone income
+    base: 12, growth: 1.28, max: Infinity,
     eff: (l) => Math.pow(1.13, l),
     effDesc: (l) => `ATK ×${Math.pow(1.13, l).toFixed(2)}`,
   },
