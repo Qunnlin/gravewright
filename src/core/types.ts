@@ -73,6 +73,10 @@ export interface Monster {
   trial?: boolean;
   /** raised mid-fight by a summoner (counts against SUMMONED_CAP) */
   summoned?: boolean;
+  /** runs from the hero instead of fighting (the Loot Goblin) */
+  flees?: boolean;
+  /** turns of its own before a fleeing monster vanishes with its hoard */
+  despawnIn?: number;
   awake: boolean;
   /** turn-parity helpers */
   slowSkip: boolean;
@@ -103,12 +107,14 @@ export interface Floor {
   items: GroundItem[];
   entry: { x: number; y: number };
   stairs: { x: number; y: number };
-  shrine: { x: number; y: number; used: boolean } | null;
+  shrine: { x: number; y: number; used: boolean; uses: number } | null;
   well: { x: number; y: number; used: boolean } | null;
   /** Sealed treasure room guarded by a Vault Warden (low chance per floor). */
   vault: { x: number; y: number; w: number; h: number } | null;
   /** Trial shrine of the Sealed Hall (boss-rush wager). */
   trial: { x: number; y: number; used: boolean } | null;
+  /** the Peddler: mystery wares for gold, stock dwindles (v1.4.0) */
+  peddler: { x: number; y: number; stock: number } | null;
   /** transient: the offer modal was already shown this visit */
   trialOffered?: boolean;
   floorTileCount: number;
@@ -322,6 +328,7 @@ export const TILE = {
   WELL: 4,
   VAULT: 5,
   TRIAL: 6,
+  PEDDLER: 7,
 } as const;
 
 export type TileVal = (typeof TILE)[keyof typeof TILE];

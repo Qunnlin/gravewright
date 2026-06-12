@@ -190,7 +190,7 @@ describe('shrines at full health', () => {
     const tx = game.heroPos.x + 1;
     const ty = game.heroPos.y;
     floor.tiles[ty * floor.w + tx] = TILE.SHRINE;
-    floor.shrine = { x: tx, y: ty, used: false };
+    floor.shrine = { x: tx, y: ty, used: false, uses: 0 };
     floor.monsters = floor.monsters.filter((m) => !(m.x === tx && m.y === ty));
     game.state.gold = 100000;
     run.hp = game.d.maxHp;

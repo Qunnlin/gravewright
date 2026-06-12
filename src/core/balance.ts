@@ -180,9 +180,34 @@ export function monsterGold(depth: number): number {
   return Math.ceil(2 * Math.pow(1.14, depth - 1));
 }
 
+/** Base bumped 20→24, growth 1.15→1.16 (v1.4.0 — gold needed somewhere
+ *  to go, and prices can afford to bite). */
 export function shrineCost(depth: number): number {
-  return Math.ceil(20 * Math.pow(1.15, depth - 1));
+  return Math.ceil(24 * Math.pow(1.16, depth - 1));
 }
+
+/** ---- the gold economy (v1.4.0: gold finally has somewhere to go) ---- */
+
+/** A Loot Goblin scurries onto this share of eligible floors (never boss
+ *  or trial floors, depth 3+)... */
+export const GOBLIN_CHANCE = 0.04;
+/** ...and wriggles away this many of its turns after first taking fright. */
+export const GOBLIN_DESPAWN_TURNS = 30;
+/** A caught goblin always bursts gold (this many goldPiles)... */
+export const GOBLIN_GOLD_PILES = 12;
+/** ...and this often the sack holds a Vestige (else a legendary). */
+export const GOBLIN_VESTIGE_CHANCE = 0.35;
+
+/** The Peddler: mystery wares, cash up front. Price in goldPiles, doubling
+ *  with each purchase on the same floor; epic minimum, rare legendary. */
+export const PEDDLER_CHANCE = 0.08;
+export const PEDDLER_STOCK = 3;
+export const PEDDLER_PRICE_PILES = 10;
+export const PEDDLER_LEGENDARY_CHANCE = 0.10;
+
+/** Re-lighting a spent shrine costs the shrine price times this, per
+ *  previous use — a repeatable, escalating gold sink for deliberate steps. */
+export const SHRINE_RELIGHT_MULT = 3;
 
 /** Souls paid out when a vessel dies (before multipliers).
  *  Death is the HEADLINE income — kill/well payouts stay clearly below it. */
@@ -300,7 +325,7 @@ export const INVENTORY_CAP = 10;
 /** Reforging a Vestige to the current depth costs roughly several floors'
  *  worth of gold income — the late-game gold sink. */
 export function reforgeCost(toDepth: number): number {
-  return Math.ceil(40 * goldPile(toDepth));
+  return Math.ceil(55 * goldPile(toDepth)); // 40→55 (v1.4.0 price bite)
 }
 
 /** ---- atmosphere & biomes ---- */

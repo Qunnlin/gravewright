@@ -581,7 +581,7 @@ describe('the trial of the sealed hall', () => {
     const sx = game.heroPos.x + dir[0];
     const sy = game.heroPos.y + dir[1];
     floor.tiles[sy * floor.w + sx] = TILE.SHRINE;
-    floor.shrine = { x: sx, y: sy, used: false };
+    floor.shrine = { x: sx, y: sy, used: false, uses: 0 };
     floor.monsters = [];
     run.hp = 1;
 

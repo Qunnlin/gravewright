@@ -2,11 +2,12 @@ import { TILE, type Floor, type Monster } from './types';
 import { biomeById, type BiomeId } from './data/biomes';
 import {
   BOSS_ATK_MULT, BOSS_HP_MULT, CHAMPION_ATK_MULT, CHAMPION_HP_MULT,
-  ELITE_ATK_MULT, ELITE_HP_MULT, MINIBOSS_ATK_MULT, MINIBOSS_HP_MULT,
+  ELITE_ATK_MULT, ELITE_HP_MULT, GOBLIN_CHANCE, GOBLIN_DESPAWN_TURNS,
+  MINIBOSS_ATK_MULT, MINIBOSS_HP_MULT, PEDDLER_CHANCE, PEDDLER_STOCK,
   VAULT_CHANCE, bonePile, championChance, elitesOnFloor, goldPile,
   monsterAtk, monsterCount, monsterDef, monsterHp, monsterXp,
 } from './balance';
-import { bossName, eligibleMonsters } from './data/monsters';
+import { SPECIAL_MONSTERS, bossName, eligibleMonsters } from './data/monsters';
 import { ENCHANTS, WARDEN_NAMES } from './data/enchants';
 import { chance, pick, pickWeighted, rndInt, rndf, shuffle } from './rng';
 
@@ -200,6 +201,37 @@ export function spawnLesser(depth: number, x: number, y: number, mods: GenMods):
   return m;
 }
 
+/** The Loot Goblin: tanky enough to need a chase, harmless, gone soon.
+ *  Unmodified by wrath/curses — it isn't part of the crypt's grudge. */
+export function spawnLootGoblin(depth: number, x: number, y: number): Monster {
+  const def = SPECIAL_MONSTERS[0];
+  return {
+    id: monsterIdCounter++,
+    key: def.key,
+    name: def.name,
+    glyph: def.glyph,
+    color: def.color,
+    x, y,
+    hp: Math.ceil(monsterHp(depth) * def.hpMult),
+    maxHp: Math.ceil(monsterHp(depth) * def.hpMult),
+    atk: 0,
+    def: 0,
+    specials: [...def.specials],
+    xp: monsterXp(depth, def.tier),
+    tier: def.tier,
+    elite: false,
+    boss: false,
+    mini: false,
+    enchants: [],
+    awake: false,
+    slowSkip: false,
+    summonCd: 0,
+    stolenGold: 0,
+    flees: true,
+    despawnIn: GOBLIN_DESPAWN_TURNS,
+  };
+}
+
 export function genFloor(
   depth: number,
   mods: GenMods = DEFAULT_MODS,
@@ -266,6 +298,7 @@ export function genFloor(
     well: null,
     vault: null,
     trial: null,
+    peddler: null,
     floorTileCount: 0,
     isBossFloor,
     biome,
@@ -316,8 +349,15 @@ export function genFloor(
   // --- shrine ---
   if (chance(0.75)) {
     const spot = freeTile(floor, taken);
-    floor.shrine = { ...spot, used: false };
+    floor.shrine = { ...spot, used: false, uses: 0 };
     tiles[idx(spot.x, spot.y)] = TILE.SHRINE;
+  }
+
+  // --- the Peddler: mystery wares for gold (v1.4.0 gold sink) ---
+  if (!isBossFloor && chance(PEDDLER_CHANCE)) {
+    const spot = freeTile(floor, taken);
+    floor.peddler = { ...spot, stock: PEDDLER_STOCK };
+    tiles[idx(spot.x, spot.y)] = TILE.PEDDLER;
   }
 
   // --- soul well on boss floors ---
@@ -349,6 +389,12 @@ export function genFloor(
     // boss guards the stairs
     const spot = freeTile(floor, taken, stairsRoom);
     floor.monsters.push(spawnMonster(depth, spot.x, spot.y, mods, { boss: true }));
+  }
+
+  // --- the Loot Goblin: catch it before it wriggles away (v1.4.0) ---
+  if (!isBossFloor && !withTrial && depth >= 3 && chance(GOBLIN_CHANCE)) {
+    const spot = freeTile(floor, taken);
+    floor.monsters.push(spawnLootGoblin(depth, spot.x, spot.y));
   }
   void entryIdx;
 
@@ -423,6 +469,7 @@ export function genTrialHall(depth: number, mods: GenMods = DEFAULT_MODS): Floor
     well: null,
     vault: null,
     trial: { x: cx, y: cy, used: true },
+    peddler: null,
     floorTileCount: 0,
     isBossFloor: false,
   };

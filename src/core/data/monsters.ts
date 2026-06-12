@@ -79,9 +79,16 @@ export const SPECIAL_NOTES: Record<MonsterSpecial, string> = {
   deadly: 'Deadly — 20% chance to crit',
 };
 
+/** Specials that spawn by their own rules, not the depth tables. */
+export const SPECIAL_MONSTERS: MonsterDef[] = [
+  { key: 'lootgoblin', name: 'Loot Goblin', glyph: '¤', color: '#ffd700', minDepth: 3, window: Infinity, hpMult: 2.2, atkMult: 0, defMult: 0, tier: 2, specials: ['fast'], flavor: 'It has your gold. It is very sorry. It is leaving.' },
+];
+
 /** Def lookup across every spawn table (UI flavor, the codex). */
 export function monsterDefByKey(key: string): MonsterDef | undefined {
-  return MONSTERS.find((m) => m.key === key) ?? BIOME_MONSTERS.find((m) => m.key === key);
+  return MONSTERS.find((m) => m.key === key)
+    ?? BIOME_MONSTERS.find((m) => m.key === key)
+    ?? SPECIAL_MONSTERS.find((m) => m.key === key);
 }
 
 export const BOSS_NAMES = [
