@@ -132,8 +132,11 @@ describe('vestige set items', () => {
       run.floor.tiles[(game.heroPos.y + dy) * run.floor.w + (game.heroPos.x + dx)] !== TILE.WALL)!;
     game.manualMove(dir[0], dir[1]);
     expect(game.state.run).not.toBeNull();
-    // the Oath-Knot's Last Stand power: rise at 30% max HP, blessed
-    expect(game.state.run!.hp).toBe(Math.max(1, Math.round(game.d.maxHp * 0.3)));
+    // the Oath-Knot's Last Stand power: rise at 30% max HP, blessed —
+    // plus that turn's regen (keyboard turns regenerate too since the
+    // equipment audit; the vigil pieces carry regen lines)
+    expect(game.state.run!.hp).toBeGreaterThanOrEqual(Math.max(1, Math.round(game.d.maxHp * 0.3)));
+    expect(game.state.run!.hp).toBeLessThan(game.d.maxHp); // risen, not healed
     expect(game.state.run!.blessTurns).toBeGreaterThan(0);
     expect(game.state.run!.oathUsed).toBe(true);
 

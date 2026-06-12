@@ -47,29 +47,31 @@ into the next version's notes.
 - [ ] **(P2, M) More gold sinks** — gold piles up mid-run with little to do.
   Candidates: in-run gambler/peddler, shrine re-rolls, and the item-raising
   service below.
-- [ ] **(P1, L) EQUIPMENT REEVALUATION — audit first, then cool affixes.**
-  Three questions, in order. (a) *Correctness:* does every affix do exactly
-  what its tooltip claims? Trace each AFFIX_DEFS entry end-to-end through
-  recalc()/combat (regen, lifesteal, dodge, crit, hpPct, gold/soul/xp/bone
-  pct) and pin each with a unit test. (b) *Weapon-kind balance:* blade/
-  heavy/polearm/bow/focus — favor bonuses + class gating: is any kind
-  strictly dominant for its classes? (c) *Rarity budgets:* does the
-  ×(1+0.45·rarity) curve (legendary ×1.35) match the felt power deltas?
-  *Instrument: an audit spec that rolls N items per kind/rarity/depth and
-  prints stat-contribution tables + robot win-rate deltas; findings report
-  → targeted fixes.* THEN the fun part — new affixes (absorbs the old
-  "more item modifiers" entry): on-kill gold burst, shrine discount,
-  +trial souls, minion lifesteal, thorns, status-duration reduction, plus
-  fresh ideas (ward-weave +def%, soul-on-crit, echo strike).
-- [ ] **(P1, M) VESTIGE STAT REPORT & possible rework** — set pieces roll a
-  FIXED 2–3-affix table at budget ×5 (SET_BUDGET_MULT) plus a named power,
-  where legendaries roll more and varied lines — "fewer enchantments" may
-  no longer be the right trade. *Report first: per piece at reference
-  depths, effective total budget vs the mean legendary/mythic of the same
-  slot; is the narrowness still attractive late; does ×5 + the power
-  justify it; do reforges keep pace. Then decide the rework with the data:
-  secondary random rolls on pieces, broader fixed tables, or budget
-  retune.*
+- [x] ~~EQUIPMENT REEVALUATION (audit phase)~~ — done in PR #36: all 11
+  affixes traced end-to-end and pinned with tests (one real bug: keyboard
+  turns skipped regen — fixed); weapon kinds and rarity budgets audited
+  (tables in test/equipment-audit.spec.ts). Remaining design findings live
+  in the two items below.
+- [ ] **(P1, M) COOL NEW AFFIXES (audit phase 2)** — on now-verified
+  plumbing: on-kill gold burst, shrine discount, +trial souls, minion
+  lifesteal, thorns, status-duration reduction, ward-weave (+def%),
+  soul-on-crit, echo strike. *Audit notes to honor: scoreItem weights are
+  wildly uneven per budget point (atk 2.0 vs xpPct 0.36 — rebalance weights
+  alongside), caps saturate from ~depth 15 on % affixes (consider budget
+  redistribution on capped lines), legendary weapons run ~14% under
+  legendary armor/charm totals (only 4 extra-affix candidates — new weapon
+  affixes fix this for free).*
+- [ ] **(P1, M, decision needed) VESTIGE REWORK** — the report is in
+  (PR #36 + audit tables): weapon/armor pieces honor "beat the legendary
+  primary" (4.0–5.5× vs 4.39× mean), but every piece carries 30–65% less
+  TOTAL budget than a same-depth legendary, and CHARM pieces collapse
+  (Ledgerstone 16% of legendary score at depth 20; Phylactery loses even
+  its primary). Cap saturation also makes reforging several pieces past
+  ~depth 15–17 pay nothing while charging full price. *Options: (a) raise
+  charm shares / give charms a secondary roll, (b) redistribute capped
+  budget into uncapped lines (fixes reforge value too), (c) accept stat
+  gap, make the powers scale instead. Owner picks; then pin charms in the
+  audit spec.*
 - [ ] **(P2, M) Loot goblin** — ultra-rare special spawn, distinct look, tries
   to FLEE (new AI: run away from hero), drops a Vestige (or big loot) when
   caught. *Flee AI = step uphill on the hero BFS field; despawn after N turns.*
