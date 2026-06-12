@@ -154,7 +154,8 @@ function heroTip(): string {
   lines.push(`<span class='tip-sub'>${esc(klass.name)} · Lv ${run.level}</span>`);
   lines.push(`<span class='tip-affix'>HP ${fmt(Math.max(0, Math.ceil(run.hp)))} / ${fmt(d.maxHp)} · ATK ${fmt(Math.round(d.atk))} · DEF ${fmt(Math.round(d.def))}</span>`);
   const eHp = B.heroEffectiveHp(d.maxHp, d.def, run.depth);
-  if (d.def > 0) lines.push(`<span class='tip-kind'>with armor: ${fmt(Math.ceil(Math.max(0, run.hp) * (eHp / d.maxHp)))} / ${fmt(Math.round(eHp))}</span>`);
+  const ward = Math.round(Math.max(0, run.hp) * (eHp / d.maxHp - 1));
+  if (ward > 0) lines.push(`<span class='tip-kind' style='color:#c8d8f5'>✛ ward ${fmt(ward)} — grave-light soaking part of every blow</span>`);
   if (run.blessTurns > 0) lines.push(`<span class='tip-kind' style='color:#ffee88'>☩ Blessed — +25% damage, ${run.blessTurns} turns left</span>`);
   for (const st of run.statuses) {
     const label = st.kind === 'poison' ? 'Poisoned' : 'Burning';

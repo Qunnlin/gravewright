@@ -45,9 +45,9 @@ describe('hero defense: the eHP system (ratio reduction, damage floor)', () => {
       .toBeCloseTo(100 / B.DEF_MIN_DMG_FRAC);
   });
 
-  it('fresh-run band: the first armor purchase sits in 20-40% vs depth 1', () => {
-    const firstBulwark = 2 * 1 * Math.pow(1.1, 1); // Ossified Hide level 1
-    const through = B.heroDamageAfterDef(100, firstBulwark, 1) / 100;
+  it('fresh-run band: starter armor (Ossified Hide 2) sits in 20-40% vs depth 1', () => {
+    const starterDef = 2 * Math.pow(1.1, 2); // Ossified Hide level 2 (halved curve)
+    const through = B.heroDamageAfterDef(100, starterDef, 1) / 100;
     expect(1 - through).toBeGreaterThanOrEqual(0.2);
     expect(1 - through).toBeLessThanOrEqual(0.4);
   });

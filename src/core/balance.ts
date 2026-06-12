@@ -23,12 +23,15 @@ function lateRamp(depth: number, rate: number): number {
   return Math.pow(rate, Math.max(0, depth - LATE_RAMP_START));
 }
 
+/** Bases raised 2026-06-12 (playtest: "I don't even die in the early game…
+ *  they also die super fast") — HP 9→10.5, ATK 3.2→3.6 lift the whole curve
+ *  ~15% so the first floors draw blood again without touching the exponents. */
 export function monsterHp(depth: number): number {
-  return 9 * Math.pow(1.23, depth - 1) * lateRamp(depth, 1.10);
+  return 10.5 * Math.pow(1.23, depth - 1) * lateRamp(depth, 1.10);
 }
 
 export function monsterAtk(depth: number): number {
-  return 3.2 * Math.pow(1.19, depth - 1) * lateRamp(depth, 1.065);
+  return 3.6 * Math.pow(1.19, depth - 1) * lateRamp(depth, 1.065);
 }
 
 /** Steepened with the 2026-06-12 defense pass (playtest: "mob defense seems
