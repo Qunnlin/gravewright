@@ -217,6 +217,7 @@ describe('balance report', () => {
     const deepestProbes = [...probes].sort((a, b) => b.depth - a.depth).slice(0, 4);
     for (const p of deepestProbes) expect(p.mTTK).toBeLessThanOrEqual(60);
 
+
     // wall expedition: grant Ravenous Descent, keep shopping, NEVER reap —
     // skip-falls past trivial floors while wrath climbs. The crypt must
     // still stop the vessel: a wall (death) within 45 sim-minutes.
@@ -244,5 +245,9 @@ describe('balance report', () => {
     // carries it past the trivial band before the crypt collects
     expect(game.state.totalDeaths).toBeGreaterThan(wallDeaths);
     expect(deathDepth).toBeGreaterThanOrEqual(15);
+    // bone-scaling lock-in: at the wall, monsters are never one-shots.
+    // (Mid-cycle snowballed vessels may still one-shot their frontier —
+    // that's the intended power fantasy that Ravenous Descent swallows.)
+    expect(wallProbe.hTTK).toBeGreaterThanOrEqual(2);
   }, 600_000);
 });
