@@ -466,7 +466,7 @@ export function uiFrame(): void {
     const hp = Math.max(0, run.hp);
     const wardNow = Math.round(hp * (wardFactor - 1));
     $('hud-hp-text').textContent = wardNow > 0
-      ? `${fmt(Math.ceil(hp))} / ${fmt(d.maxHp)} · ward ✛ ${fmt(wardNow)}`
+      ? `${fmt(Math.ceil(hp))} / ${fmt(d.maxHp)}  (+${fmt(wardNow)})`
       : `${fmt(Math.ceil(hp))} / ${fmt(d.maxHp)}`;
     const fleshPct = Math.min(100, (hp / eHp) * 100);
     const wardPct = Math.min(100 - fleshPct, fleshPct * (wardFactor - 1));
