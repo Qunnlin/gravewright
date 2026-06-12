@@ -180,3 +180,25 @@ describe('auto-mend', () => {
     expect(st.alive).toBe(false);
   });
 });
+
+describe('shrines at full health', () => {
+  it('a deliberate step uses the shrine even at full HP; idle autopilot does not', () => {
+    seedRng(11);
+    const game = freshGame();
+    const run = game.state.run!;
+    const floor = run.floor;
+    const tx = game.heroPos.x + 1;
+    const ty = game.heroPos.y;
+    floor.tiles[ty * floor.w + tx] = TILE.SHRINE;
+    floor.shrine = { x: tx, y: ty, used: false };
+    floor.monsters = floor.monsters.filter((m) => !(m.x === tx && m.y === ty));
+    game.state.gold = 100000;
+    run.hp = game.d.maxHp;
+    game.state.auto = false;
+
+    game.manualMove(1, 0); // keyboard = deliberate
+    expect(floor.shrine.used).toBe(true);
+    expect(run.blessTurns).toBeGreaterThan(0);
+    expect(game.state.gold).toBeLessThan(100000);
+  });
+});

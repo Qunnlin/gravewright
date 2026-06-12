@@ -459,9 +459,19 @@ export function uiFrame(): void {
         ? '◈ FELL THE AVATAR'
         : `◈ survive ${trial.turnsSurvived}/${trial.totalTurns}`
       : s.auto ? game.goal : 'Manual control';
-    $('hud-hp-text').textContent = `${fmt(Math.max(0, Math.ceil(run.hp)))} / ${fmt(d.maxHp)}`;
-    ($('hud-hp-fill') as HTMLElement).style.width =
-      `${Math.max(0, Math.min(100, (run.hp / d.maxHp) * 100))}%`;
+    // the bar shows EFFECTIVE HP: flesh (red) plus what armor adds (grey)
+    // at this depth — same drain fraction, honest capacity
+    const eHp = B.heroEffectiveHp(d.maxHp, d.def, run.depth);
+    const armorFactor = eHp / d.maxHp;
+    const hp = Math.max(0, run.hp);
+    $('hud-hp-text').textContent =
+      `${fmt(Math.ceil(hp * armorFactor))} / ${fmt(Math.round(eHp))}`;
+    const fleshPct = Math.min(100, (hp / eHp) * 100);
+    const armorPct = Math.min(100 - fleshPct, fleshPct * (armorFactor - 1));
+    ($('hud-hp-fill') as HTMLElement).style.width = `${fleshPct}%`;
+    const armorEl = $('hud-armor-fill') as HTMLElement;
+    armorEl.style.left = `${fleshPct}%`;
+    armorEl.style.width = `${armorPct}%`;
     const xpNeed = B.xpForLevel(run.level);
     ($('hud-xp-fill') as HTMLElement).style.width =
       `${Math.max(0, Math.min(100, (run.xp / xpNeed) * 100))}%`;
@@ -472,6 +482,7 @@ export function uiFrame(): void {
     $('hud-goal').textContent = s.summonCd > 0 ? `summoning in ${fmtTime(s.summonCd)}` : '';
     $('hud-hp-text').textContent = '';
     ($('hud-hp-fill') as HTMLElement).style.width = '0%';
+    ($('hud-armor-fill') as HTMLElement).style.width = '0%';
     ($('hud-xp-fill') as HTMLElement).style.width = '0%';
   }
 
@@ -786,11 +797,10 @@ function panelVessel(): string {
   const d = game.d;
   const run = s.run;
   const klass = classById(run?.klass ?? s.curClass);
-  // defense is shown as EFFECTIVE HP vs the local depth — linear and
-  // unbounded in def, so every purchased point visibly moves it (never %)
+  // defense is shown as EFFECTIVE HP vs the local depth — keep the words
+  // simple even though the math underneath isn't (playtest request)
   const mitDepth = Math.max(1, run?.depth ?? game.d.startDepth);
   const eHp = B.heroEffectiveHp(d.maxHp, d.def, mitDepth);
-  const hitsToDie = Math.max(1, Math.floor(eHp / B.monsterAtk(mitDepth)));
 
   const statRows: [string, string, string][] = [
     ['Max HP', fmt(d.maxHp),
@@ -798,11 +808,9 @@ function panelVessel(): string {
     ['Attack', fmt(Math.round(d.atk)),
       'Damage per strike, before the enemy’s mitigation. Includes upgrades, class, gear, level and essence.'],
     ['Defense', fmt(Math.round(d.def)),
-      'Armor. Each point stretches your effective HP against the local monsters — see below. No amount makes you immortal: every hit always lands at least 1%.'],
+      'Armor. More defense = more effective HP, always. Deeper monsters punch harder through it.'],
     ['Effective HP', fmt(Math.round(eHp)),
-      `What your ${fmt(d.maxHp)} HP is worth once depth-${mitDepth} monsters punch through your armor. Grows with EVERY point of defense, forever — but deeper monsters hit harder, so it shrinks as you descend.`],
-    ['Hits to die', fmt(hitsToDie),
-      `Typical depth-${mitDepth} swings your vessel can absorb before dying (before dodge, block, regen and healing).`],
+      'The total damage your vessel can take here, armor included — the grey part of the health bar. Poison and burn ignore armor.'],
     ['Crit', `${Math.round(d.crit)}% ×${d.critDmg}`,
       'Chance to strike for double damage.'],
     ['Speed', `${d.tickRate.toFixed(1)} act/s`,
