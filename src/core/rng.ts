@@ -28,16 +28,22 @@ export function chance(p: number): boolean {
   return rnd() < p;
 }
 
-/** Cosmetic side-roll that does NOT advance the gameplay stream. Seeded
- *  balance tests replay exact runs; vanity (biomes, flourishes) must never
- *  shift their rng. Mixes the current state with a different increment than
- *  rnd(), so it stays deterministic per-state yet uncorrelated with the
- *  next gameplay roll. At most one independent side-roll per state advance. */
-export function sideChance(p: number): boolean {
+/** Side-roll float that does NOT advance the gameplay stream. Seeded
+ *  balance tests replay exact runs; side systems (biomes, flourishes) must
+ *  never shift their rng. Mixes the current state with a different
+ *  increment than rnd(), so it stays deterministic per-state yet
+ *  uncorrelated with the next gameplay roll. At most ONE independent
+ *  side-roll per state advance — consecutive calls return the same value,
+ *  so derive every side decision of a tick from a single draw. */
+export function sideRnd(): number {
   let t = (state + 0x9e3779b9) >>> 0;
   t = Math.imul(t ^ (t >>> 15), t | 1);
   t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-  return ((t ^ (t >>> 14)) >>> 0) / 4294967296 < p;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+
+export function sideChance(p: number): boolean {
+  return sideRnd() < p;
 }
 
 export function pick<T>(arr: readonly T[]): T {

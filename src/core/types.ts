@@ -108,9 +108,9 @@ export interface Floor {
   trialOffered?: boolean;
   floorTileCount: number;
   isBossFloor: boolean;
-  /** Cosmetic biome override (rolled at gen; never persisted — run is nulled
-   *  on save). 'server' = the humming server-room easter egg. */
-  biome?: 'server';
+  /** Biome this floor belongs to (rolled at gen; never persisted — run is
+   *  nulled on save). Defs in data/biomes.ts. */
+  biome?: import('./data/biomes').BiomeId;
 }
 
 export type StatusKind = 'poison' | 'burn';
@@ -162,9 +162,11 @@ export interface RunState {
   oathUsed: boolean;
   /** shrines used by THIS vessel (the ritual counts per life) */
   shrinesThisRun: number;
-  /** floors of the current biome streak still to generate (server room
-   *  runs for SERVER_ROOM_FLOORS once entered); 0 = honest stone */
+  /** biome streak state: which biome, floors of it still to generate, and
+   *  the honest-stone cooldown before another may begin (BIOME_COOLDOWN) */
+  biomeId: import('./data/biomes').BiomeId | null;
   biomeFloorsLeft: number;
+  biomeCooldown: number;
   /** turn of the last direct hit taken (genuWall's Stateful power) */
   lastHitTurn: number;
 }
