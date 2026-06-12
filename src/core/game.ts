@@ -11,7 +11,7 @@ import {
 } from './types';
 import * as B from './balance';
 import { bus, log } from './events';
-import { chance, pick, rndf, rndInt } from './rng';
+import { chance, pick, rndf, rndInt, sideChance } from './rng';
 import {
   DEFAULT_MODS, bfsMap, computeFov, genFloor, genTrialHall, isPassable,
   losClear, nearestWhere, spawnLesser, spawnMonster, type GenMods,
@@ -78,6 +78,7 @@ export function defaultState(): GameState {
       sound: true, autoBuyBones: true, particles: true,
       autoEquip: true, autoSalvageBelow: 0, protectRarity: 4,
       buyAmount: 1, autoMend: false, protectVestiges: true, ravenousActive: true,
+      crtFilter: false,
     },
   };
 }
@@ -351,7 +352,11 @@ export class Game {
 
     const curseIds = Object.keys(s.curses).filter((id) => s.curses[id]);
     const depth = 1 + this.eff('memory');
-    const floor = genFloor(depth, this.genMods(curseIds), this.rollTrial(depth));
+    const withTrial = this.rollTrial(depth);
+    let biomeFloorsLeft = this.rollBiomeStart(depth, withTrial, 0);
+    const floor = genFloor(depth, this.genMods(curseIds), withTrial,
+      biomeFloorsLeft > 0 ? 'server' : undefined);
+    if (biomeFloorsLeft > 0) biomeFloorsLeft--;
 
     const run: RunState = {
       depth,
@@ -372,6 +377,7 @@ export class Game {
       oathUsed: false,
       shrinesThisRun: 0,
       lastHitTurn: 0,
+      biomeFloorsLeft,
     };
     s.keptGear = { weapon: null, armor: null, charm: null };
     s.run = run;
@@ -405,6 +411,9 @@ export class Game {
     Object.assign(this.heroPos, floor.entry);
     bus.emit({ type: 'summon', name: run.heroName, klass: run.klass });
     log(`☥ ${run.heroName} shuffles into the crypt (depth ${depth}).`, 'summon');
+    if (floor.biome === 'server') {
+      log('∿ The walls here are too regular. Black racks hum in ordered rows, and something keeps the air cold on purpose.', 'mystic');
+    }
     if (floor.isBossFloor) {
       const boss = floor.monsters.find((m) => m.boss);
       if (boss) {
@@ -425,6 +434,17 @@ export class Game {
   private pushTrail(): void {
     this.trail.unshift({ x: this.heroPos.x, y: this.heroPos.y });
     if (this.trail.length > 8) this.trail.pop();
+  }
+
+  /** Whether a server-room streak begins at this depth: deep enough, not a
+   *  boss or trial floor, and the side-roll hums. Returns the streak length
+   *  to set (or the running streak unchanged). Uses sideChance so seeded
+   *  gameplay rng is never disturbed by atmosphere. */
+  private rollBiomeStart(depth: number, withTrial: boolean, running: number): number {
+    if (running > 0) return running;
+    if (withTrial || depth % 5 === 0) return 0;
+    if (depth < B.SERVER_ROOM_MIN_DEPTH) return 0;
+    return sideChance(B.SERVER_ROOM_CHANCE) ? B.SERVER_ROOM_FLOORS : 0;
   }
 
   /** Whether the next floor bears a Sealed Hall. */
@@ -490,6 +510,23 @@ export class Game {
     this.descendOnce();
   }
 
+  /** Atmosphere band index for a depth (palette era; thresholds in balance). */
+  private static bandOf(depth: number): number {
+    let band = 0;
+    for (let i = 0; i < B.ATMOSPHERE_BANDS.length; i++) {
+      if (depth >= B.ATMOSPHERE_BANDS[i]) band = i;
+    }
+    return band;
+  }
+
+  /** Murmured once on crossing into each deeper atmosphere band. */
+  private static readonly BAND_OMENS: { text: string; flash: string }[] = [
+    { text: '', flash: '' }, // bone dust: the starting era, never "entered"
+    { text: 'The dust ends here. The walls sweat, and the rot is patient.', flash: '#2a6246' },
+    { text: 'The damp deepens into drowned cold. Lantern light comes back thinner.', flash: '#27437e' },
+    { text: 'The stone gives way to something that only remembers being stone.', flash: '#4a2180' },
+  ];
+
   private descendOnce(): void {
     const s = this.state;
     const run = s.run;
@@ -498,10 +535,19 @@ export class Game {
     // descending mid-trial is flight — the Hall keeps the wager
     if (run.trialActive) this.failTrial('fled');
 
+    // band crossing is judged against the last GENERATED floor, so a
+    // Ravenous fall across a boundary still gets its omen
+    const prevBand = Game.bandOf(run.floor.depth);
+    const wasServer = run.floor.biome === 'server';
+
     run.depth++;
     if (run.depth > s.bestDepth) s.bestDepth = run.depth;
     if (run.depth > s.bestDepthThisReap) s.bestDepthThisReap = run.depth;
-    run.floor = genFloor(run.depth, this.genMods(run.curseIds), this.rollTrial(run.depth));
+    const withTrial = this.rollTrial(run.depth);
+    run.biomeFloorsLeft = this.rollBiomeStart(run.depth, withTrial, run.biomeFloorsLeft);
+    const biome = run.biomeFloorsLeft > 0 ? ('server' as const) : undefined;
+    if (run.biomeFloorsLeft > 0) run.biomeFloorsLeft--;
+    run.floor = genFloor(run.depth, this.genMods(run.curseIds), withTrial, biome);
     Object.assign(this.heroPos, run.floor.entry);
     this.trail = [];
     run.oathUsed = false;
@@ -511,6 +557,17 @@ export class Game {
     if (classById(run.klass).revealMap) run.floor.seen.fill(1);
     bus.emit({ type: 'descend', depth: run.depth });
     log(`▼ Depth ${run.depth}. The air forgets warmth.`, 'descend');
+    const newBand = Game.bandOf(run.depth);
+    if (newBand > prevBand) {
+      const omen = Game.BAND_OMENS[newBand];
+      log(omen.text, 'mystic');
+      bus.emit({ type: 'flash', color: omen.flash });
+    }
+    if (run.floor.biome === 'server' && !wasServer) {
+      log('∿ The walls here are too regular. Black racks hum in ordered rows, and something keeps the air cold on purpose.', 'mystic');
+    } else if (!run.floor.biome && wasServer) {
+      log('∿ The hum fades behind you. Honest stone again.', 'mystic');
+    }
     // the riddle of the Sealed Hall, murmured rarely
     if (run.depth >= 10 && chance(0.03)) {
       log('The crypt murmurs: three blessings in one life unseal a hall…', 'mystic');

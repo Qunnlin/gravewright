@@ -109,7 +109,15 @@ describe('save round-trip', () => {
     expect(decoded.totalKills).toBe(3);
     expect(decoded.bones).toBe(base.bones);
     expect(decoded.settings.sound).toBe(base.settings.sound);
+    expect(decoded.settings.crtFilter).toBe(false); // new setting defaults off
     expect(decoded.minions.skeleton).toBeDefined();
     expect(decoded.classesUnlocked).toContain('wretch');
+  });
+
+  it('coerces the crtFilter setting strictly (default-off vanity)', () => {
+    const tampered = { v: 1, settings: { crtFilter: 'yes' } };
+    expect(decodeSave(btoa(JSON.stringify(tampered))).settings.crtFilter).toBe(false);
+    const enabled = { v: 1, settings: { crtFilter: true } };
+    expect(decodeSave(btoa(JSON.stringify(enabled))).settings.crtFilter).toBe(true);
   });
 });

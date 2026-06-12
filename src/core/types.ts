@@ -108,6 +108,9 @@ export interface Floor {
   trialOffered?: boolean;
   floorTileCount: number;
   isBossFloor: boolean;
+  /** Cosmetic biome override (rolled at gen; never persisted — run is nulled
+   *  on save). 'server' = the humming server-room easter egg. */
+  biome?: 'server';
 }
 
 export type StatusKind = 'poison' | 'burn';
@@ -159,6 +162,9 @@ export interface RunState {
   oathUsed: boolean;
   /** shrines used by THIS vessel (the ritual counts per life) */
   shrinesThisRun: number;
+  /** floors of the current biome streak still to generate (server room
+   *  runs for SERVER_ROOM_FLOORS once entered); 0 = honest stone */
+  biomeFloorsLeft: number;
   /** turn of the last direct hit taken (genuWall's Stateful power) */
   lastHitTurn: number;
 }
@@ -187,6 +193,8 @@ export interface Settings {
   protectVestiges: boolean;
   /** Ravenous Descent active (the upgrade can be toggled off to farm floors) */
   ravenousActive: boolean;
+  /** CRT/arcade display filter: scanlines, phosphor, vignette, fringing */
+  crtFilter: boolean;
 }
 
 export interface GameState {

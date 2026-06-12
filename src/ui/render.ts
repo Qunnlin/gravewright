@@ -1,8 +1,9 @@
 /** Canvas renderer: the crypt, its inhabitants, and all the juice. */
 
-import { TILE } from '../core/types';
+import { TILE, type Floor } from '../core/types';
 import type { Game } from '../core/game';
 import { bus, type GameEvent } from '../core/events';
+import { ATMOSPHERE_BANDS } from '../core/balance';
 import { FLOOR_W, FLOOR_H } from '../core/dungeon';
 import { classById } from '../core/data/classes';
 import { MINIONS } from '../core/data/upgrades';
@@ -83,6 +84,123 @@ const TILE_GLYPHS: Record<number, { glyph: string; color: string }> = {
   [TILE.WELL]: { glyph: '◉', color: '#bb99ff' },
 };
 
+/** ---- depth atmosphere ----
+ * The crypt dries, rots, drowns, then empties into void as you descend.
+ * Each band (stops in balance.ts ATMOSPHERE_BANDS) holds flat, then blends
+ * fast over the last BAND_BLEND depths before the next stop — distinct eras
+ * with sharp borders, not one long dimmer slide. Landmark glyph colors stay
+ * fixed (TILE_GLYPHS) so stairs/shrines/wells read the same at every depth. */
+interface Palette {
+  bg: string;       // canvas clear
+  wall: string;     // wall fill (visible)
+  wallEdge: string; // 2px lit top edge of walls
+  floor: string;    // floor fill (visible)
+  dot: string;      // the faint '·' texture on visible floor
+}
+
+/** One palette per ATMOSPHERE_BANDS stop, in order. */
+const BAND_COLORS: Palette[] = [
+  // bone dust — warm parchment over old stone
+  { bg: '#0a0908', wall: '#39322a', wallEdge: '#4e4438', floor: '#16120e', dot: '#322a20' },
+  // wet rot — the damp climbs the walls
+  { bg: '#040b07', wall: '#1d4030', wallEdge: '#2a6246', floor: '#081410', dot: '#1c3c2a' },
+  // drowned cold — a kingdom's worth of dark water
+  { bg: '#03060f', wall: '#1b2c54', wallEdge: '#27437e', floor: '#080d1d', dot: '#19294a' },
+  // the void — color itself gives up
+  { bg: '#030108', wall: '#2e1650', wallEdge: '#4a2180', floor: '#0e0518', dot: '#321a55' },
+];
+
+/** Depths of fast blending right before each band boundary. */
+const BAND_BLEND = 3;
+
+/** The server room: genua cooler purple racks, digital-blue floor lights. */
+const SERVER_PALETTE: Palette = {
+  bg: '#070512', wall: '#2a2058', wallEdge: '#43339a', floor: '#0a0c20', dot: '#1d4a6e',
+};
+const SERVER_LEDS = ['#38c8f0', '#27e8a7'];
+
+function hexRgb(hex: string): [number, number, number] {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+function lerpHex(a: string, b: string, t: number): string {
+  const ca = hexRgb(a);
+  const cb = hexRgb(b);
+  const c = ca.map((v, i) => Math.round(v + (cb[i] - v) * t));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+
+function parseCol(color: string): [number, number, number] {
+  return color.startsWith('#')
+    ? hexRgb(color)
+    : (color.match(/\d+/g) ?? ['0', '0', '0']).map(Number) as [number, number, number];
+}
+
+/** Darken a palette color for fog-of-war memory (factor ≈ the old hardcoded
+ *  vis/dim ratios: walls ~0.62, floors ~0.66). */
+function shade(color: string, f: number): string {
+  const [r, g, b] = parseCol(color);
+  return `rgb(${Math.floor(r * f)},${Math.floor(g * f)},${Math.floor(b * f)})`;
+}
+
+/** Like shade(), but never lets the result sink within `min` per channel of
+ *  the background — remembered floor must stay legible against the void. */
+function shadeAbove(color: string, f: number, bg: string, min = 5): string {
+  const c = parseCol(color).map((v) => Math.floor(v * f));
+  const b = parseCol(bg);
+  return `rgb(${Math.max(c[0], b[0] + min)},${Math.max(c[1], b[1] + min)},${Math.max(c[2], b[2] + min)})`;
+}
+
+interface ResolvedPalette {
+  bg: string;
+  wallVis: string; wallDim: string;
+  edgeVis: string; edgeDim: string;
+  floorVis: string; floorDim: string;
+  dot: string;
+}
+
+let palCacheKey = '';
+let palCache: ResolvedPalette | null = null;
+
+function paletteFor(floor: Floor): ResolvedPalette {
+  const key = `${floor.biome ?? ''}:${floor.depth}`;
+  if (key === palCacheKey && palCache) return palCache;
+  let base: Palette;
+  if (floor.biome === 'server') {
+    base = SERVER_PALETTE;
+  } else {
+    // active band: last stop at or below this depth
+    let band = 0;
+    for (let i = 0; i < ATMOSPHERE_BANDS.length; i++) {
+      if (floor.depth >= ATMOSPHERE_BANDS[i]) band = i;
+    }
+    base = BAND_COLORS[band];
+    // approaching the next boundary: blend fast across the threshold
+    const next = ATMOSPHERE_BANDS[band + 1];
+    if (next !== undefined && floor.depth > next - BAND_BLEND) {
+      const t = (floor.depth - (next - BAND_BLEND)) / BAND_BLEND;
+      const hi = BAND_COLORS[band + 1];
+      base = {
+        bg: lerpHex(base.bg, hi.bg, t),
+        wall: lerpHex(base.wall, hi.wall, t),
+        wallEdge: lerpHex(base.wallEdge, hi.wallEdge, t),
+        floor: lerpHex(base.floor, hi.floor, t),
+        dot: lerpHex(base.dot, hi.dot, t),
+      };
+    }
+  }
+  palCache = {
+    bg: base.bg,
+    wallVis: base.wall, wallDim: shade(base.wall, 0.62),
+    edgeVis: base.wallEdge, edgeDim: shade(base.wallEdge, 0.62),
+    floorVis: base.floor, floorDim: shadeAbove(base.floor, 0.66, base.bg),
+    dot: base.dot,
+  };
+  palCacheKey = key;
+  return palCache;
+}
+
 const ITEM_GLYPHS: Record<string, { glyph: string; color: string }> = {
   gold: { glyph: '$', color: '#ffd700' },
   bones: { glyph: '∴', color: '#d8d0b8' },
@@ -106,10 +224,9 @@ export function drawFrame(dt: number): void {
     ctx.translate((Math.random() - 0.5) * p, (Math.random() - 0.5) * p);
   }
 
-  ctx.fillStyle = '#07070d';
-  ctx.fillRect(-10, -10, w + 20, h + 20);
-
   const run = game.state.run;
+  ctx.fillStyle = run ? paletteFor(run.floor).bg : '#07070d';
+  ctx.fillRect(-10, -10, w + 20, h + 20);
   if (run) {
     drawFloor();
     drawEntities();
@@ -161,6 +278,8 @@ export function drawFrame(dt: number): void {
 
 function drawFloor(): void {
   const floor = game.state.run!.floor;
+  const pal = paletteFor(floor);
+  const server = floor.biome === 'server';
   ctx.font = `${CELL - 3}px "JetBrains Mono", monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -175,15 +294,23 @@ function drawFloor(): void {
       const py = y * CELL;
 
       if (t === TILE.WALL) {
-        ctx.fillStyle = vis ? '#23233a' : '#15151f';
+        ctx.fillStyle = vis ? pal.wallVis : pal.wallDim;
         ctx.fillRect(px, py, CELL, CELL);
-        ctx.fillStyle = vis ? '#2e2e4a' : '#1b1b29';
+        ctx.fillStyle = vis ? pal.edgeVis : pal.edgeDim;
         ctx.fillRect(px, py, CELL, 2);
+        // rack-walls: scattered status LEDs blink across the server room
+        if (server && vis && (x * 31 + y * 17) % 9 === 0) {
+          const on = Math.floor(animClock / 600 + x * 13 + y * 7) % 3 !== 0;
+          if (on) {
+            ctx.fillStyle = SERVER_LEDS[(x + y) % SERVER_LEDS.length];
+            ctx.fillRect(px + CELL - 6, py + 5, 2, 2);
+          }
+        }
       } else {
         const isVault = t === TILE.VAULT;
         ctx.fillStyle = isVault
           ? (vis ? '#1a1130' : '#100a1d')
-          : (vis ? '#0d0d18' : '#090911');
+          : (vis ? pal.floorVis : pal.floorDim);
         ctx.fillRect(px, py, CELL, CELL);
         if (t === TILE.TRIAL) {
           // the Sealed Hall's shrine shimmers through every color it has eaten
@@ -216,7 +343,7 @@ function drawFloor(): void {
           ctx.fillText(special.glyph, px + CELL / 2, py + CELL / 2 + 1);
           ctx.shadowBlur = 0;
         } else if (vis) {
-          ctx.fillStyle = isVault ? '#41306b' : '#1f1f30';
+          ctx.fillStyle = isVault ? '#41306b' : pal.dot;
           ctx.fillText(isVault ? '◆' : '·', px + CELL / 2, py + CELL / 2 + 1);
         }
       }
@@ -234,7 +361,10 @@ function drawEntities(): void {
     const i = it.y * floor.w + it.x;
     if (!floor.seen[i]) continue;
     const g = ITEM_GLYPHS[it.kind];
-    ctx.fillStyle = floor.visible[i] ? g.color : dim(g.color);
+    // data caches glow digital blue in the server room
+    const color = it.kind === 'chest' && it.special && floor.biome === 'server'
+      ? '#38c8f0' : g.color;
+    ctx.fillStyle = floor.visible[i] ? color : dim(color);
     ctx.fillText(g.glyph, it.x * CELL + CELL / 2, it.y * CELL + CELL / 2 + 1);
   }
 

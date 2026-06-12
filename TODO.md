@@ -56,6 +56,21 @@ how-tos and `CLAUDE.md` for the contribution rules.
   ATK ×1.05^(d−12)) + difficulty probes & wall-expedition instrumentation in
   the balance report. Measured: cycle-1 deaths 2→6, frontier monster threat
   100→≈25 hits, no-shop survival 20→10 min, post-reap wall at ~depth 20.
+- [x] Canvas hover tooltips: hover any seen cell for monster stats/specials/
+  enchants/flavor, vessel info, loot amounts and landmark details
+  (src/ui/maptip.ts; rides the shared tooltip via a programmatic API).
+- [x] Status indicators top-left of the map: bless/poison/burn chips with turn
+  counters, blinking when about to expire; extensible via STATUS_META in ui.ts.
+- [x] Scarier dungeon palettes with depth: four distinct eras (bone dust →
+  wet rot → drowned cold → void, stops at depth 1/12/24/36) that hold flat and
+  snap across the boundary, each crossing marked by an omen line + flash.
+- [x] The **genua server-room biome**: starts rarely at depth 13+, runs for
+  3 floors; cooler purple racks, blinking LEDs, native monsters (Daemon
+  Process, Firewall Sentinel, Coolant Wraith — eligible for elite/champion
+  rolls), 1.5× gold piles and data-cache chests (epic+); entry/exit murmurs;
+  `?dev=1` has a force button.
+- [x] CRT filter in Settings (default off): scanlines, phosphor grille,
+  vignette, retrace band, chromatic fringing; respects prefers-reduced-motion.
 
 ## Quick wins (S effort, mostly QoL)
 
@@ -110,13 +125,6 @@ how-tos and `CLAUDE.md` for the contribution rules.
 
 ## UX & presentation
 
-- [ ] **(P1, M) Hover enemies/tiles on the map for stats** — canvas hover
-  tooltip with monster name/HP/ATK/specials/enchants, tile info. *mousemove on
-  canvas → cell → reuse the data-tip tooltip div directly.*
-- [ ] **(P1, M) Status indicators top-left of the map** — icons for
-  bless/poison/burn/etc. with turn counters, blinking when about to expire;
-  extensible for future buffs/potions. *Draw in render.ts or absolutely-
-  positioned DOM over the canvas frame.*
 - [ ] **(P2, M) Log rework** — prettier and more informative: grouping/
   collapsing repeats ("×12"), icons, filter toggles (combat/loot/system),
   timestamps or depth markers.
@@ -124,15 +132,6 @@ how-tos and `CLAUDE.md` for the contribution rules.
   is plain; consider a sprite/icon dependency (e.g. a CC0 roguelike tileset or
   game-icons.net SVG set) for classes, monsters, items. *Touches render.ts
   glyph pipeline + UI chips; pick a license-clean source.*
-- [ ] **(P2, M) Scarier dungeon palettes with depth** — tone shifts as you
-  descend (dry bones → wet rot → void). Includes the **genua server-room
-  biome** easter egg: rare deep floor in genua cooler purple + digital blue
-  (cable-tray corridors, humming rack-walls). *Per-depth palette table +
-  biome flag on Floor.*
-- [ ] **(P2, S) CRT / old-TV / arcade filter, toggleable in Settings** —
-  scanlines exist; full filter adds phosphor glow, vignette, slight chromatic
-  aberration. *CSS layers on #app; `settings.crtFilter` default off; respect
-  prefers-reduced-motion.*
 
 ## Systems & meta
 

@@ -1,7 +1,7 @@
 /** DOM UI: HUD, tabbed panels, shops, log, modals. */
 
 import type { Game } from '../core/game';
-import type { Item, Strategy } from '../core/types';
+import type { Item, StatusKind, Strategy } from '../core/types';
 import { bus, type GameEvent } from '../core/events';
 import { fmt, fmtMult, fmtTime } from '../core/format';
 import * as B from '../core/balance';
@@ -51,6 +51,7 @@ export function initUI(g: Game): void {
 
   document.body.addEventListener('click', onClick);
   bus.on(onEvent);
+  applyCrtFilter();
 
   renderPanel();
   setInterval(() => renderPanel(), 1000);
@@ -306,6 +307,11 @@ function onClick(ev: MouseEvent): void {
       game.state.settings.particles = !game.state.settings.particles;
       queueRender();
       break;
+    case 'toggle-crt':
+      game.state.settings.crtFilter = !game.state.settings.crtFilter;
+      applyCrtFilter();
+      queueRender();
+      break;
     case 'save-now':
       saveGame(game);
       addLog('Progress committed to the ledger.', 'system');
@@ -349,6 +355,46 @@ function onClick(ev: MouseEvent): void {
 }
 
 /** ---------------- HUD (cheap, every frame) ---------------- */
+
+/** The CRT filter is a body class so its CSS layers can blanket everything. */
+function applyCrtFilter(): void {
+  document.body.classList.toggle('crt', game.state.settings.crtFilter);
+}
+
+/** Status indicators over the map: icon + remaining turns per active effect.
+ *  Extending StatusKind forces an entry here — the chips stay exhaustive. */
+const STATUS_META: Record<StatusKind, { icon: string; cls: string; label: string }> = {
+  poison: { icon: '☣', cls: 'st-poison', label: 'Poisoned' },
+  burn: { icon: '♨', cls: 'st-burn', label: 'Burning' },
+};
+
+let lastStatusHtml: string | null = null;
+
+/** Chips are click-through (pointer-events: none) so the map underneath stays
+ *  hoverable — full status detail lives on the hero's own hover tip. */
+function statusChip(cls: string, icon: string, turns: number, expiring: boolean): string {
+  return `<span class="status-chip ${cls}${expiring ? ' expiring' : ''}">${icon}<span class="st-turns">${turns}</span></span>`;
+}
+
+function statusIconsFrame(): void {
+  const run = game.state.run;
+  let html = '';
+  if (run) {
+    const chips: string[] = [];
+    if (run.blessTurns > 0) {
+      chips.push(statusChip('st-bless', '☩', run.blessTurns, run.blessTurns <= 3));
+    }
+    for (const st of run.statuses) {
+      const meta = STATUS_META[st.kind];
+      chips.push(statusChip(meta.cls, meta.icon, st.turns, st.turns <= 2));
+    }
+    html = chips.join('');
+  }
+  if (html !== lastStatusHtml) {
+    lastStatusHtml = html;
+    $('status-icons').innerHTML = html;
+  }
+}
 
 const lastCurVals: Record<string, number> = {};
 const lastBump: Record<string, number> = {};
@@ -415,6 +461,8 @@ export function uiFrame(): void {
 
   $('cur-souls-pending').textContent =
     run ? `+${fmt(game.deathYield())}` : '';
+
+  statusIconsFrame();
 
   const autoBtn = $('btn-auto');
   if (!game.autoUnlocked()) {
@@ -932,6 +980,8 @@ function panelSettings(): string {
     <h2>Settings</h2>
     ${toggle('Sound', s.settings.sound, 'toggle-sound')}
     ${toggle('Damage numbers', s.settings.particles, 'toggle-particles')}
+    ${toggle('CRT filter', s.settings.crtFilter, 'toggle-crt',
+      'Phosphor and curved glass: heavy scanlines, glow, vignette and a whisper of color fringing. Pure vanity.')}
     ${toggle('Auto-equip loot', s.settings.autoEquip, 'toggle-autoequip',
       'When on, looted items the vessel can wield are equipped automatically when clearly better (+5%).')}
     ${game.qolUnlocked('tithe') ? `<div class="setting-row" data-tip="Unequipped loot below this rarity is scrapped on pickup. Protected rarities are always safe.">

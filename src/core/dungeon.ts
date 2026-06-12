@@ -2,6 +2,7 @@ import { TILE, type Floor, type Monster } from './types';
 import {
   BOSS_ATK_MULT, BOSS_HP_MULT, CHAMPION_ATK_MULT, CHAMPION_HP_MULT,
   ELITE_ATK_MULT, ELITE_HP_MULT, MINIBOSS_ATK_MULT, MINIBOSS_HP_MULT,
+  SERVER_GOLD_MULT,
   VAULT_CHANCE, bonePile, championChance, elitesOnFloor, goldPile,
   monsterAtk, monsterCount, monsterDef, monsterHp, monsterXp,
 } from './balance';
@@ -107,10 +108,11 @@ export function spawnMonster(
   x: number,
   y: number,
   mods: GenMods,
-  opts: { elite?: boolean; boss?: boolean; mini?: boolean; plain?: boolean } = {},
+  opts: { elite?: boolean; boss?: boolean; mini?: boolean; plain?: boolean; biome?: 'server' } = {},
 ): Monster {
-  const defs = eligibleMonsters(depth);
-  const def = pickWeighted(defs, defs.map((d) => 10 / (1 + d.tier * 0.5)));
+  const defs = eligibleMonsters(depth, opts.biome);
+  // biome natives crowd out the common rabble (×3 weight)
+  const def = pickWeighted(defs, defs.map((d) => (10 / (1 + d.tier * 0.5)) * (d.biome ? 3 : 1)));
   const elite = opts.elite ?? false;
   const boss = opts.boss ?? false;
   const mini = opts.mini ?? false;
@@ -197,7 +199,12 @@ export function spawnLesser(depth: number, x: number, y: number, mods: GenMods):
   return m;
 }
 
-export function genFloor(depth: number, mods: GenMods = DEFAULT_MODS, withTrial = false): Floor {
+export function genFloor(
+  depth: number,
+  mods: GenMods = DEFAULT_MODS,
+  withTrial = false,
+  biome?: 'server',
+): Floor {
   const tiles = new Uint8Array(FLOOR_W * FLOOR_H); // all WALL
   const isBossFloor = depth % 5 === 0;
 
@@ -260,6 +267,7 @@ export function genFloor(depth: number, mods: GenMods = DEFAULT_MODS, withTrial 
     trial: null,
     floorTileCount: 0,
     isBossFloor,
+    biome,
   };
 
   const taken = new Set<number>();
@@ -325,13 +333,13 @@ export function genFloor(depth: number, mods: GenMods = DEFAULT_MODS, withTrial 
     const spot = freeTile(floor, taken);
     // keep spawns off the entrance doorstep
     if (Math.abs(spot.x - floor.entry.x) + Math.abs(spot.y - floor.entry.y) < 4) continue;
-    floor.monsters.push(spawnMonster(depth, spot.x, spot.y, mods));
+    floor.monsters.push(spawnMonster(depth, spot.x, spot.y, mods, { biome }));
   }
   let elites = elitesOnFloor(depth);
   for (const m of shuffle([...floor.monsters])) {
     if (elites <= 0) break;
     if (!m.elite && !m.boss && !m.mini && m.enchants.length === 0) {
-      const e = spawnMonster(depth, m.x, m.y, mods, { elite: true });
+      const e = spawnMonster(depth, m.x, m.y, mods, { elite: true, biome });
       Object.assign(m, { ...e, id: m.id, x: m.x, y: m.y });
       elites--;
     }
@@ -344,10 +352,13 @@ export function genFloor(depth: number, mods: GenMods = DEFAULT_MODS, withTrial 
   void entryIdx;
 
   // --- loot ---
+  // salvaged hardware: the server room pays richer gold, and its chests are
+  // data caches holding an epic or better (the special flag)
+  const goldMult = biome === 'server' ? SERVER_GOLD_MULT : 1;
   const goldPiles = rndInt(4, 7);
   for (let i = 0; i < goldPiles; i++) {
     const spot = freeTile(floor, taken);
-    floor.items.push({ ...spot, kind: 'gold', amount: Math.ceil(goldPile(depth) * rndf(0.7, 1.4)) });
+    floor.items.push({ ...spot, kind: 'gold', amount: Math.ceil(goldPile(depth) * rndf(0.7, 1.4) * goldMult) });
   }
   const bonePiles = rndInt(2, 4);
   for (let i = 0; i < bonePiles; i++) {
@@ -357,7 +368,7 @@ export function genFloor(depth: number, mods: GenMods = DEFAULT_MODS, withTrial 
   const chests = rndInt(1, 3);
   for (let i = 0; i < chests; i++) {
     const spot = freeTile(floor, taken);
-    floor.items.push({ ...spot, kind: 'chest', amount: 0 });
+    floor.items.push({ ...spot, kind: 'chest', amount: 0, special: biome === 'server' || undefined });
   }
   if (chance(0.4)) {
     const spot = freeTile(floor, taken);
