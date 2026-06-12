@@ -542,6 +542,21 @@ export class Game {
     this.descendOnce();
   }
 
+  /** How strongly the ward holds at a depth, in coarse tiers (3 bright …
+   *  0 guttering) — drives the occasional thinning line on descent. */
+  private static wardTier(def: number, depth: number): number {
+    const k = B.defenseK(depth);
+    const reduction = def / (def + k);
+    return reduction >= 0.55 ? 3 : reduction >= 0.4 ? 2 : reduction >= 0.2 ? 1 : 0;
+  }
+
+  private static readonly WARD_TIER_LINES = [
+    '✛ The ward gutters — nearly spent against these depths.',
+    '✛ The ward is down to a pale shimmer.',
+    '✛ The ward dims; the dark leans closer.',
+    '', // tier 3 is full brightness — never announced
+  ];
+
   /** Atmosphere band index for a depth (palette era; thresholds in balance). */
   private static bandOf(depth: number): number {
     let band = 0;
@@ -588,12 +603,13 @@ export class Game {
     if (classById(run.klass).revealMap) run.floor.seen.fill(1);
     bus.emit({ type: 'descend', depth: run.depth });
     log(`▼ Depth ${run.depth}. The air forgets warmth.`, 'descend');
-    // the deeper dark thins the ward — say it plainly, in passing
+    // the deeper dark thins the ward — noted only when it crosses a tier,
+    // and without pseudo-numbers (the sheen on the bar is the display)
     if (this.d.def > 0) {
-      const before = Math.round(B.heroEffectiveHp(this.d.maxHp, this.d.def, prevDepth) - this.d.maxHp);
-      const after = Math.round(B.heroEffectiveHp(this.d.maxHp, this.d.def, run.depth) - this.d.maxHp);
-      if (before > after && before > 0) {
-        log(`✛ The ward thins: ${fmt(before)} → ${fmt(after)}.`, 'system');
+      const before = Game.wardTier(this.d.def, prevDepth);
+      const after = Game.wardTier(this.d.def, run.depth);
+      if (after < before) {
+        log(Game.WARD_TIER_LINES[after], 'system');
       }
     }
     const newBand = Game.bandOf(run.depth);

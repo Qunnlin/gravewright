@@ -493,9 +493,9 @@ export function uiFrame(): void {
     const wardFactor = eHp / d.maxHp;
     const hp = Math.max(0, run.hp);
     const wardNow = Math.round(hp * (wardFactor - 1));
-    $('hud-hp-text').textContent = wardNow > 0
-      ? `${fmt(Math.ceil(hp))} / ${fmt(d.maxHp)}  (+${fmt(wardNow)})`
-      : `${fmt(Math.ceil(hp))} / ${fmt(d.maxHp)}`;
+    // no ward number here: it isn't HP you can watch deplete, and showing
+    // it as one confused playtesters — the sheen and the shards carry it
+    $('hud-hp-text').textContent = `${fmt(Math.ceil(hp))} / ${fmt(d.maxHp)}`;
     const fleshPct = Math.max(0, Math.min(100, (hp / d.maxHp) * 100));
     ($('hud-hp-fill') as HTMLElement).style.width = `${fleshPct}%`;
     const wardEl = $('hud-ward-fill') as HTMLElement;
@@ -827,12 +827,6 @@ function panelVessel(): string {
   const d = game.d;
   const run = s.run;
   const klass = classById(run?.klass ?? s.curClass);
-  // defense weaves THE WARD: a cloak of pale grave-light that soaks part of
-  // every blow — and naturally dims the deeper you carry it. Simple words,
-  // complex math stays in balance.ts (playtest request).
-  const mitDepth = Math.max(1, run?.depth ?? game.d.startDepth);
-  const eHp = B.heroEffectiveHp(d.maxHp, d.def, mitDepth);
-  const ward = Math.round(eHp - d.maxHp);
 
   const statRows: [string, string, string][] = [
     ['Max HP', fmt(d.maxHp),
@@ -840,9 +834,7 @@ function panelVessel(): string {
     ['Attack', fmt(Math.round(d.atk)),
       'Damage per strike, before the enemy’s mitigation. Includes upgrades, class, gear, level and essence.'],
     ['Defense', fmt(Math.round(d.def)),
-      'Armor. Weaves the Ward — the pale stretch of your health bar. More defense, brighter ward.'],
-    ['Ward', `✛ ${fmt(ward)}`,
-      'A cloak of grave-light woven from your defense. It soaks part of every blow — but the dark below thins it, and poison or burn slip straight through.'],
+      'Armor weaves the Ward — the pale sheen on your health bar. The brighter it glows, the more of every blow it eats. The dark below dulls it; poison and burn slip through.'],
     ['Crit', `${Math.round(d.crit)}% ×${d.critDmg}`,
       'Chance to strike for double damage.'],
     ['Speed', `${d.tickRate.toFixed(1)} act/s`,
