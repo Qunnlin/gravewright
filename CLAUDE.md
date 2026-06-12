@@ -89,6 +89,13 @@ test/              vitest suites + browser-smoke.mjs + balance-report
   no Claude trailer on human-written changes.
 - Content additions (monsters, items, affixes, sets, relics, curses,
   achievements, classes) follow the step-by-step guide in `docs/EXTENDING.md`.
+- **Versioning & changelog**: every merged PR adds its entry to
+  `CHANGELOG.md` under *[Unreleased]*. Releases follow semver — **patch** =
+  fixes & balance nudges, **minor** = features/content, **major** =
+  save-breaking or pillar changes — and bump `src/core/version.ts` (the
+  single source of truth, shown in Settings) + `package.json`, then date the
+  Unreleased heading. `GameState.v` is the save schema version; never
+  conflate the two.
 
 ## Conventions
 
