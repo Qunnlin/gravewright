@@ -82,17 +82,24 @@ export function mitigation(def: number): number {
   return Math.min(0.8, def / (def + 35));
 }
 
-/** HERO mitigation: the pivot scales with depth so defense is a treadmill,
- *  not a one-time checkbox. The old hard min(0.8,·) clamp re-created the
- *  checkbox for invested players: compounding DEF upgrades (2·l·1.1^l ×
- *  1.1^l) cross the linear cap line 4·(25+6·depth) everywhere, pegging the
- *  panel at −80% forever (playtest: "defense still stuck at 80%"). Now an
- *  asymptote toward 85%: every DEF point always moves the number, deeper
- *  floors always dilute it, nothing is ever "stuck". */
-export const HERO_MITIGATION_MAX = 0.85;
+/** HERO defense, rebuilt from zero (2026-06-12, third round of playtest
+ *  feedback — the MODEL was wrong, not the constants). Percentage mitigation
+ *  (rational curves, PoE-armour-style) fails the legibility test in an
+ *  incremental: +50 DEF moves a hidden percentage by an invisible amount,
+ *  so every purchase "feels wasted". New model — FLAT SOAK, Grim-Dawn-style:
+ *  every point of DEF removes one point of damage from every hit, but soak
+ *  can never erase more than DEF_SOAK_CAP of a hit. Reads concretely on the
+ *  panel ("soaks 124 damage per hit, up to half"), every purchase visibly
+ *  grows the number, and the treadmill is automatic: monster ATK grows
+ *  exponentially with depth, so the same DEF soaks an ever-smaller share.
+ *  Cap 0.55: armor can at best take slightly more than half a hit — HP and healing carry the rest
+ *  (0.75 let optimal frontier vessels shrug to monTTK 127, vs the report's
+ *  bounded-threat assertion of ≤60). */
+export const DEF_SOAK_CAP = 0.55;
 
-export function heroMitigation(def: number, depth: number): number {
-  return HERO_MITIGATION_MAX * def / (def + 25 + 6 * depth);
+/** Damage that gets through the hero's armor: flat soak, capped. */
+export function heroDamageAfterDef(raw: number, def: number): number {
+  return Math.max(raw * (1 - DEF_SOAK_CAP), raw - def);
 }
 
 /** Ravenous Descent: floors collapse when the vessel out-damages their

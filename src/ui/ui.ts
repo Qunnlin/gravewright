@@ -784,16 +784,19 @@ function panelVessel(): string {
   const d = game.d;
   const run = s.run;
   const klass = classById(run?.klass ?? s.curClass);
-  const mitDepth = run?.depth ?? game.d.startDepth;
-  const mit = Math.round(B.heroMitigation(d.def, mitDepth) * 100);
+  // what the armor actually does against the local monsters' raw swing
+  const mitDepth = Math.max(1, run?.depth ?? game.d.startDepth);
+  const localRaw = B.monsterAtk(mitDepth);
+  const soaked = Math.round(localRaw - B.heroDamageAfterDef(localRaw, d.def));
+  const soakPct = Math.round((soaked / localRaw) * 100);
 
   const statRows: [string, string, string][] = [
     ['Max HP', fmt(d.maxHp),
       'The vessel’s health. Refilled on summon; partially restored on descent and level-up.'],
     ['Attack', fmt(Math.round(d.atk)),
       'Damage per strike, before the enemy’s mitigation. Includes upgrades, class, gear, level and essence.'],
-    ['Defense', `${fmt(Math.round(d.def))} (−${mit}% dmg)`,
-      `Reduces incoming damage by 85%·def÷(def+25+6·depth) — every point helps, approaching 85% but never reaching it. The crypt presses harder the deeper you stand — shown for depth ${mitDepth}.`],
+    ['Defense', `${fmt(Math.round(d.def))} soak (−${soakPct}%)`,
+      `Armor soaks a flat ${fmt(Math.round(d.def))} damage from every hit, but never more than ${Math.round(B.DEF_SOAK_CAP * 100)}% of the hit. Against a typical depth-${mitDepth} swing (~${fmt(Math.round(localRaw))}) that blocks ${fmt(soaked)} (−${soakPct}%). Deeper monsters swing harder, so the same armor soaks a smaller share.`],
     ['Crit', `${Math.round(d.crit)}% ×${d.critDmg}`,
       'Chance to strike for double damage.'],
     ['Speed', `${d.tickRate.toFixed(1)} act/s`,
@@ -808,7 +811,7 @@ function panelVessel(): string {
       'All bone multipliers combined. Bones persist through death.'],
   ];
   if (d.dodge > 0) statRows.push(['Dodge', `${d.dodge}%`, 'Chance to avoid an attack entirely.']);
-  if (d.blockPct > 0) statRows.push(['Block', `${d.blockPct}%`, 'Flat damage reduction applied after mitigation.']);
+  if (d.blockPct > 0) statRows.push(['Block', `${d.blockPct}%`, 'Percentage damage reduction applied after the armor soak.']);
   if (d.lifesteal > 0) statRows.push(['Lifesteal', `${Math.round(d.lifesteal)}%`, 'Heals this share of damage dealt.']);
   if (d.healOnKill > 0) statRows.push(['Heal on kill', `${Math.round(d.healOnKill)}%`, 'Max HP restored with every kill.']);
   if (d.keepGearChance > 0) statRows.push(['Keep gear', `${Math.round(d.keepGearChance)}%`, 'Chance per equipped item to survive the vessel’s death.']);
