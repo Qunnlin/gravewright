@@ -9,6 +9,35 @@ and bumps `src/core/version.ts` + `package.json`.
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-06-12 · The Quartermaster's Reckoning
+
+### Added
+
+- **Three new affixes** (on audit-verified plumbing): **dot resist**
+  (blunts poison/burn ticks — the counterplay to ward bypass), **thorns**
+  (melee attackers bleed for every contact; armor-only, flat, uncapped),
+  and **cleave** (strikes splash a share of dealt damage to enemies
+  adjacent to the target; weapon-only). All wired into Derived, combat,
+  the Vessel panel and the scorer; each pinned with behavior tests. Cleave
+  also fixes the legendary-weapon line shortfall (6th weapon affix). (#37)
+
+### Balance
+
+- **Percent affixes scale slower, with depth** (audit finding: every % cap
+  saturated by ~depth 13–19 — "+60% HP at depth 20, +100% XP on a deep
+  epic"). Caps are now depth-scaled (`min(hard, base + slope·depth)`) and
+  perBudget values trimmed: e.g. lifesteal reaches 18% at depth 20 and its
+  hard 30% only past depth 37; XP hits 100% only past depth 35. Flat
+  affixes (atk/def/regen/thorns) stay uncapped — the treadmill demands it.
+- **Vestige rework** (the report's verdict, owner-directed): every set
+  piece now carries **five curated lines** chosen to fit its set — the
+  Packet Cleaver cleaves, the firewall resists payloads, the Bastion grows
+  thorns — with headline shares still beating the mean legendary primary
+  and share-sums landing in legendary-total territory. Charm pieces
+  recover from 16% of legendary value to ~120%; %-heavy charms carry an
+  uncapped anchor (Marked Coin atk, Ledgerstone def) so they keep pace at
+  depth. All pieces pinned in the audit spec, charms included. (#37)
+
 ### Added
 
 - Equipment audit instrumentation: `test/equipment-audit.spec.ts` prints

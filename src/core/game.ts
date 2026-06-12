@@ -240,6 +240,9 @@ export class Game {
       keepGearChance: Math.min(95,
         this.eff('reliquary') + relics.reduce((b, r) => b + (r!.keepGear ?? 0), 0)),
       marrowPct: this.eff('marrow') * (gild3 ? 2 : 1),
+      dotResist: Math.min(75, gearStat('dotResist')),
+      thorns: gearStat('thorns'),
+      cleave: Math.min(60, gearStat('cleave')),
       dodge: Math.min(60,
         (klass.dodge ?? 0) + gearStat('dodge') + (pieces('genugate') >= 2 ? 15 : 0) +
         (watch3 ? 20 : 0)),
@@ -888,10 +891,12 @@ export class Game {
     const run = this.state.run!;
     for (const st of run.statuses) {
       if ((st.kind === 'poison' || st.kind === 'burn') && !this.devInvulnerable) {
-        run.hp -= st.power;
+        // dot resist gear blunts the tick (the ward never does)
+        const dealt = Math.max(1, Math.round(st.power * (1 - this.d.dotResist / 100)));
+        run.hp -= dealt;
         bus.emit({
           type: 'float', x: this.heroPos.x, y: this.heroPos.y,
-          text: `-${fmt(st.power)}`, color: st.kind === 'poison' ? '#7fdd6a' : '#ff8844',
+          text: `-${fmt(dealt)}`, color: st.kind === 'poison' ? '#7fdd6a' : '#ff8844',
         });
       }
       st.turns--;
@@ -1514,6 +1519,20 @@ export class Game {
       run.hp = Math.min(d.maxHp, run.hp + dmg * d.lifesteal / 100);
     }
 
+    // cleave: the strike splashes to enemies adjacent to the TARGET
+    // (iterate a copy — splash kills replace the monsters array)
+    if (d.cleave > 0) {
+      const splash = Math.max(1, Math.round(dmg * d.cleave / 100));
+      for (const v of [...run.floor.monsters]) {
+        if (v === m || v.hp <= 0) continue;
+        if (Math.abs(v.x - m.x) > 1 || Math.abs(v.y - m.y) > 1) continue;
+        v.hp -= splash;
+        v.awake = true;
+        bus.emit({ type: 'float', x: v.x, y: v.y, text: `-${fmt(splash)}`, color: '#ffb36b' });
+        if (v.hp <= 0) this.killMonster(v);
+      }
+    }
+
     bus.emit({
       type: 'float', x: m.x, y: m.y,
       text: `${isCrit ? '✸' : ''}${fmt(Math.round(dmg))}`,
@@ -1925,6 +1944,18 @@ export class Game {
     if (m.specials.includes('burn')) {
       this.addStatus('burn', B.BURN_TURNS, Math.max(1, raw * B.BURN_POWER));
     }
+    // thorns: melee attackers pay for the contact (the hit and its riders
+    // above still resolve — the bite happened)
+    if (d.thorns > 0 && !ranged) {
+      m.hp -= d.thorns;
+      bus.emit({ type: 'float', x: m.x, y: m.y, text: `-${fmt(d.thorns)}`, color: '#9fb4dd' });
+      if (m.hp <= 0) {
+        this.killMonster(m);
+        this.lethalCheck();
+        return;
+      }
+    }
+
     if (m.specials.includes('thief') && s.gold > 0 && !d.thiefProof) {
       const steal = Math.min(s.gold, Math.ceil(B.monsterGold(run.depth) * 3));
       s.gold -= steal;

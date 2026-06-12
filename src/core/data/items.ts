@@ -86,24 +86,40 @@ interface AffixDef {
   slots: Slot[];
   /** value per point of stat budget */
   perBudget: number;
-  /** hard cap for percentage-type affixes (0 = uncapped) */
+  /** hard ceiling for percentage-type affixes (0 = uncapped) */
   cap: number;
+  /** depth-scaled cap: min(cap, capBase + capPerDepth·depth). Percent
+   *  affixes used to slam their flat caps by ~depth 13–19 (equipment
+   *  audit) — "+60% HP at depth 20" — so percents now grow with depth
+   *  and reach their ceilings only deep. 0/0 = flat cap only. */
+  capBase: number;
+  capPerDepth: number;
   label: (v: number) => string;
 }
 
 export const AFFIX_DEFS: AffixDef[] = [
-  { affix: 'atk',       slots: ['weapon', 'charm'],         perBudget: 1.0,  cap: 0,  label: (v) => `+${v} ATK` },
-  { affix: 'def',       slots: ['armor', 'charm'],          perBudget: 0.8,  cap: 0,  label: (v) => `+${v} DEF` },
-  { affix: 'hpPct',     slots: ['armor', 'charm'],          perBudget: 1.2,  cap: 60, label: (v) => `+${v}% HP` },
-  { affix: 'crit',      slots: ['weapon', 'charm'],         perBudget: 0.5,  cap: 35, label: (v) => `+${v}% crit` },
-  { affix: 'goldPct',   slots: ['charm', 'weapon'],         perBudget: 2.0,  cap: 150,label: (v) => `+${v}% gold` },
-  { affix: 'soulPct',   slots: ['charm', 'armor'],          perBudget: 1.0,  cap: 80, label: (v) => `+${v}% souls` },
-  { affix: 'regen',     slots: ['armor', 'charm'],          perBudget: 0.35, cap: 0,  label: (v) => `+${v} HP/turn` },
-  { affix: 'lifesteal', slots: ['weapon'],                  perBudget: 0.4,  cap: 30, label: (v) => `+${v}% lifesteal` },
-  { affix: 'xpPct',     slots: ['charm', 'armor'],          perBudget: 1.2,  cap: 100,label: (v) => `+${v}% XP` },
-  { affix: 'bonePct',   slots: ['charm', 'weapon'],         perBudget: 1.0,  cap: 80, label: (v) => `+${v}% bones` },
-  { affix: 'dodge',     slots: ['armor', 'charm'],          perBudget: 0.25, cap: 12, label: (v) => `+${v}% dodge` },
+  { affix: 'atk',       slots: ['weapon', 'charm'],          perBudget: 1.0,  cap: 0,   capBase: 0,  capPerDepth: 0,    label: (v) => `+${v} ATK` },
+  { affix: 'def',       slots: ['armor', 'charm'],           perBudget: 0.8,  cap: 0,   capBase: 0,  capPerDepth: 0,    label: (v) => `+${v} DEF` },
+  { affix: 'hpPct',     slots: ['armor', 'charm'],           perBudget: 0.9,  cap: 60,  capBase: 8,  capPerDepth: 2,    label: (v) => `+${v}% HP` },
+  { affix: 'crit',      slots: ['weapon', 'charm'],          perBudget: 0.4,  cap: 35,  capBase: 6,  capPerDepth: 1,    label: (v) => `+${v}% crit` },
+  { affix: 'goldPct',   slots: ['charm', 'weapon'],          perBudget: 1.5,  cap: 150, capBase: 20, capPerDepth: 4,    label: (v) => `+${v}% gold` },
+  { affix: 'soulPct',   slots: ['charm', 'armor'],           perBudget: 0.8,  cap: 80,  capBase: 10, capPerDepth: 2,    label: (v) => `+${v}% souls` },
+  { affix: 'regen',     slots: ['armor', 'charm'],           perBudget: 0.35, cap: 0,   capBase: 0,  capPerDepth: 0,    label: (v) => `+${v} HP/turn` },
+  { affix: 'lifesteal', slots: ['weapon'],                   perBudget: 0.3,  cap: 30,  capBase: 4,  capPerDepth: 0.7,  label: (v) => `+${v}% lifesteal` },
+  { affix: 'xpPct',     slots: ['charm', 'armor'],           perBudget: 0.9,  cap: 100, capBase: 12, capPerDepth: 2.5,  label: (v) => `+${v}% XP` },
+  { affix: 'bonePct',   slots: ['charm', 'weapon'],          perBudget: 0.8,  cap: 80,  capBase: 10, capPerDepth: 2.5,  label: (v) => `+${v}% bones` },
+  { affix: 'dodge',     slots: ['armor', 'charm'],           perBudget: 0.2,  cap: 12,  capBase: 2,  capPerDepth: 0.35, label: (v) => `+${v}% dodge` },
+  { affix: 'dotResist', slots: ['armor', 'charm'],           perBudget: 0.5,  cap: 70,  capBase: 8,  capPerDepth: 1.6,  label: (v) => `+${v}% dot resist` },
+  { affix: 'thorns',    slots: ['armor'],                    perBudget: 0.6,  cap: 0,   capBase: 0,  capPerDepth: 0,    label: (v) => `${v} thorns` },
+  { affix: 'cleave',    slots: ['weapon'],                   perBudget: 0.35, cap: 50,  capBase: 6,  capPerDepth: 1.2,  label: (v) => `+${v}% cleave` },
 ];
+
+/** The effective cap for an affix on an item of the given depth. */
+export function affixCap(def: { cap: number; capBase: number; capPerDepth: number }, depth: number): number {
+  if (def.cap <= 0) return Infinity;
+  if (def.capPerDepth <= 0) return def.cap;
+  return Math.min(def.cap, Math.round(def.capBase + def.capPerDepth * depth));
+}
 
 /** Pick a weapon kind, biased toward what the given class can actually wield. */
 function rollWeaponKind(classId?: string): WeaponKind {
@@ -138,8 +154,7 @@ export function rollItem(depth: number, forcedMinRarity = 0, classId?: string): 
 
   const apply = (affix: Affix, budgetShare: number) => {
     const def = AFFIX_DEFS.find((d) => d.affix === affix)!;
-    let v = Math.max(1, Math.round(budgetShare * def.perBudget));
-    if (def.cap > 0) v = Math.min(def.cap, v);
+    const v = Math.max(1, Math.min(affixCap(def, depth), Math.round(budgetShare * def.perBudget)));
     stats[affix] = (stats[affix] ?? 0) + v;
   };
 
@@ -179,7 +194,10 @@ export function scoreItem(item: Item): number {
     (s.lifesteal ?? 0) * 1.5 +
     (s.xpPct ?? 0) * 0.3 +
     (s.bonePct ?? 0) * 0.5 +
-    (s.dodge ?? 0) * 2
+    (s.dodge ?? 0) * 2 +
+    (s.dotResist ?? 0) * 0.8 +
+    (s.thorns ?? 0) * 0.7 +
+    (s.cleave ?? 0) * 1.2
   );
 }
 

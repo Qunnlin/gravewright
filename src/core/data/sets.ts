@@ -6,7 +6,7 @@
  */
 import type { Affix, Item, Slot, WeaponKind } from '../types';
 import { itemStatBudget } from '../balance';
-import { AFFIX_DEFS, scoreItem } from './items';
+import { AFFIX_DEFS, affixCap, scoreItem } from './items';
 
 export interface SetPieceDef {
   slot: Slot;
@@ -40,19 +40,19 @@ export const SETS: SetDef[] = [
     pieces: [
       {
         slot: 'weapon', name: 'genuScreen, the Packet Cleaver', kind: 'blade',
-        affixes: { atk: 0.9, crit: 0.4 },
+        affixes: { atk: 0.9, crit: 0.4, cleave: 0.35, bonePct: 0.35, goldPct: 0.4 },
         powerId: 'inspection', powerName: 'Deep Inspection',
         powerDesc: 'First contact is fully inspected: +50% damage against unhurt enemies.',
       },
       {
         slot: 'armor', name: 'genuWall, the Stateful Aegis',
-        affixes: { def: 1.0, regen: 0.45, hpPct: 0.35, dodge: 0.1 },
+        affixes: { def: 1.0, regen: 0.45, hpPct: 0.35, dodge: 0.25, dotResist: 0.45 },
         powerId: 'stateful', powerName: 'Stateful',
         powerDesc: 'After 5 turns without taking a hit, the next hit is dropped outright.',
       },
       {
         slot: 'charm', name: 'genuKey, the Trusted Token',
-        affixes: { regen: 0.55, goldPct: 0.5, soulPct: 0.3 },
+        affixes: { regen: 0.6, goldPct: 0.6, soulPct: 0.4, dotResist: 0.4, atk: 0.4 },
         powerId: 'leastpriv', powerName: 'Least Privilege',
         powerDesc: 'Thieves cannot steal from you, and shrines charge half.',
       },
@@ -68,19 +68,19 @@ export const SETS: SetDef[] = [
     pieces: [
       {
         slot: 'weapon', name: 'Sceptre of the First Grave', kind: 'focus',
-        affixes: { atk: 0.8, soulPct: 0.4 },
+        affixes: { atk: 0.8, soulPct: 0.4, crit: 0.4, cleave: 0.4, bonePct: 0.4 },
         powerId: 'conduction', powerName: 'Conduction',
         powerDesc: 'Minions echo every strike a second time at half power.',
       },
       {
         slot: 'armor', name: 'Shroud of the Hollow Choir',
-        affixes: { def: 0.8, regen: 0.5, hpPct: 0.35 },
+        affixes: { def: 0.8, regen: 0.5, hpPct: 0.35, soulPct: 0.35, dotResist: 0.4 },
         powerId: 'choir', powerName: 'The Choir Endures',
         powerDesc: 'Minions take half damage when shielding the vessel.',
       },
       {
         slot: 'charm', name: 'Phylactery of True Names',
-        affixes: { soulPct: 0.45, xpPct: 0.4, regen: 0.35 },
+        affixes: { soulPct: 0.5, xpPct: 0.5, regen: 0.4, atk: 0.5, crit: 0.5 },
         powerId: 'truenames', powerName: 'True Names',
         powerDesc: 'Every kill surrenders its name: bonus souls per kill, scaling with depth.',
       },
@@ -96,19 +96,19 @@ export const SETS: SetDef[] = [
     pieces: [
       {
         slot: 'weapon', name: 'Vigilkeeper’s Edge', kind: 'blade',
-        affixes: { atk: 1.0, lifesteal: 0.3 },
+        affixes: { atk: 1.0, lifesteal: 0.35, crit: 0.35, cleave: 0.35, bonePct: 0.35 },
         powerId: 'holdline', powerName: 'Hold the Line',
         powerDesc: '+40% damage against elites, champions, wardens and bosses.',
       },
       {
         slot: 'armor', name: 'Bastion of the Ninth Vault',
-        affixes: { def: 1.1, regen: 0.4, hpPct: 0.35 },
+        affixes: { def: 1.1, regen: 0.4, hpPct: 0.35, thorns: 0.45, dotResist: 0.3 },
         powerId: 'unbroken', powerName: 'Unbroken',
         powerDesc: 'Regenerates 1.5% max HP per turn while below half health.',
       },
       {
         slot: 'charm', name: 'The Oath-Knot',
-        affixes: { atk: 0.45, crit: 0.3, hpPct: 0.3 },
+        affixes: { atk: 0.5, crit: 0.4, hpPct: 0.4, regen: 0.55, dotResist: 0.45 },
         powerId: 'laststand', powerName: 'Last Stand',
         powerDesc: 'When the Oath refuses a killing blow, rise at 30% health, blessed.',
       },
@@ -124,19 +124,19 @@ export const SETS: SetDef[] = [
     pieces: [
       {
         slot: 'weapon', name: 'Watchman’s Recurve', kind: 'bow',
-        affixes: { atk: 0.9, crit: 0.3 },
+        affixes: { atk: 0.9, crit: 0.4, cleave: 0.35, goldPct: 0.35, bonePct: 0.4 },
         powerId: 'deadeye', powerName: 'Deadeye',
         powerDesc: '+20% critical chance. The dark has nowhere to hide.',
       },
       {
         slot: 'armor', name: 'Stalker’s Shroud',
-        affixes: { def: 0.8, regen: 0.45, dodge: 0.1 },
+        affixes: { def: 0.8, regen: 0.45, dodge: 0.25, hpPct: 0.45, dotResist: 0.45 },
         powerId: 'fleetfoot', powerName: 'Fleetfoot',
         powerDesc: '+1 action per second. The watch never lingers.',
       },
       {
         slot: 'charm', name: 'The Marked Coin',
-        affixes: { goldPct: 0.45, bonePct: 0.4, regen: 0.3 },
+        affixes: { goldPct: 0.5, bonePct: 0.45, regen: 0.5, atk: 0.5, soulPct: 0.45 },
         powerId: 'quarry', powerName: 'Quarry',
         powerDesc: 'Elites and champions pay double gold and bones when felled.',
       },
@@ -152,19 +152,19 @@ export const SETS: SetDef[] = [
     pieces: [
       {
         slot: 'weapon', name: 'Coinblade, Paid in Full', kind: 'blade',
-        affixes: { atk: 0.85, goldPct: 0.5 },
+        affixes: { atk: 0.85, goldPct: 0.5, cleave: 0.35, crit: 0.35, bonePct: 0.35 },
         powerId: 'tollkeeper', powerName: 'Tollkeeper',
         powerDesc: 'Every kill pays its toll in gold.',
       },
       {
         slot: 'armor', name: 'Gildedmail of the Hollow Purse',
-        affixes: { def: 0.9, regen: 0.4, goldPct: 0.3 },
+        affixes: { def: 0.9, regen: 0.4, goldPct: 0.35, hpPct: 0.4, thorns: 0.35 },
         powerId: 'midas', powerName: 'Midas Scrap',
         powerDesc: 'Salvage pays triple.',
       },
       {
         slot: 'charm', name: 'The Ledgerstone',
-        affixes: { goldPct: 0.55, bonePct: 0.45 },
+        affixes: { goldPct: 0.55, bonePct: 0.45, regen: 0.5, soulPct: 0.4, def: 0.45 },
         powerId: 'usury', powerName: 'Usury',
         powerDesc: 'Every shrine payment returns 150% of its cost — in bones.',
       },
@@ -178,9 +178,12 @@ export function setById(id: string): SetDef | undefined {
   return SETS.find((s) => s.id === id);
 }
 
-/** The Vestige stat budget runs hot — these are trophies, not drops, and a
- *  piece's headline stat must outclass a Legendary's (whose primary lands at
- *  ~4.4x base budget). Their real identity is the unique powers. */
+/** The Vestige stat budget runs hot — these are trophies, not drops. Each
+ *  piece carries FIVE curated lines (like a legendary's count, but chosen
+ *  to fit the set — equipment-audit rework): the headline share targets a
+ *  Legendary's primary (~4.4× base budget) and the share-sum (~2.3–2.6 ×5
+ *  ≈ 12×) lands in legendary-total territory. Their souls remain the
+ *  unique powers. */
 const SET_BUDGET_MULT = 5.0;
 
 /** Deterministic stat types; magnitudes scale with conquest depth. */
@@ -192,8 +195,7 @@ export function rollSetPiece(setId: string, slot: Slot, depth: number): Item | n
   const stats: Item['stats'] = {};
   for (const [affix, share] of Object.entries(piece.affixes) as [Affix, number][]) {
     const def = AFFIX_DEFS.find((d) => d.affix === affix)!;
-    let v = Math.max(1, Math.round(budget * share * def.perBudget));
-    if (def.cap > 0) v = Math.min(def.cap, v);
+    const v = Math.max(1, Math.min(affixCap(def, depth), Math.round(budget * share * def.perBudget)));
     stats[affix] = v;
   }
   const item: Item = {

@@ -52,26 +52,14 @@ into the next version's notes.
   turns skipped regen — fixed); weapon kinds and rarity budgets audited
   (tables in test/equipment-audit.spec.ts). Remaining design findings live
   in the two items below.
-- [ ] **(P1, M) COOL NEW AFFIXES (audit phase 2)** — on now-verified
-  plumbing: on-kill gold burst, shrine discount, +trial souls, minion
-  lifesteal, thorns, status-duration reduction, ward-weave (+def%),
-  soul-on-crit, echo strike. *Audit notes to honor: scoreItem weights are
-  wildly uneven per budget point (atk 2.0 vs xpPct 0.36 — rebalance weights
-  alongside), caps saturate from ~depth 15 on % affixes (consider budget
-  redistribution on capped lines), legendary weapons run ~14% under
-  legendary armor/charm totals (only 4 extra-affix candidates — new weapon
-  affixes fix this for free).*
-- [ ] **(P1, M, decision needed) VESTIGE REWORK** — the report is in
-  (PR #36 + audit tables): weapon/armor pieces honor "beat the legendary
-  primary" (4.0–5.5× vs 4.39× mean), but every piece carries 30–65% less
-  TOTAL budget than a same-depth legendary, and CHARM pieces collapse
-  (Ledgerstone 16% of legendary score at depth 20; Phylactery loses even
-  its primary). Cap saturation also makes reforging several pieces past
-  ~depth 15–17 pay nothing while charging full price. *Options: (a) raise
-  charm shares / give charms a secondary roll, (b) redistribute capped
-  budget into uncapped lines (fixes reforge value too), (c) accept stat
-  gap, make the powers scale instead. Owner picks; then pin charms in the
-  audit spec.*
+- [x] ~~COOL NEW AFFIXES + VESTIGE REWORK~~ — shipped as v1.2.0 (PR #37):
+  dot resist / thorns / cleave; depth-scaled % caps ("slower, with depth");
+  five curated lines per Vestige piece (charms recovered 16%→~120% of
+  legendary value, all pinned). Remaining affix ideas for a later batch:
+  on-kill gold burst, shrine discount, +trial souls, minion lifesteal,
+  status-duration reduction, soul-on-crit, echo strike. *scoreItem weight
+  spread (atk 2.0 vs xpPct 0.36 per budget point) still unaddressed —
+  revisit if auto-equip keeps dumping utility gear.*
 - [ ] **(P2, M) Loot goblin** — ultra-rare special spawn, distinct look, tries
   to FLEE (new AI: run away from hero), drops a Vestige (or big loot) when
   caught. *Flee AI = step uphill on the hero BFS field; despawn after N turns.*

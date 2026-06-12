@@ -7,4 +7,4 @@
  *  A release bumps this, package.json's version, and turns CHANGELOG.md's
  *  [Unreleased] section into a dated release heading. The Settings tab
  *  displays it. (GameState.v is the SAVE schema version — unrelated.) */
-export const GAME_VERSION = '1.1.1';
+export const GAME_VERSION = '1.2.0';
