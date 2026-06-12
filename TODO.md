@@ -1,6 +1,6 @@
 # GRAVEWRIGHT — idea backlog
 
-Curated from playtests (last update 2026-06-12). **Effort**: S (under half a
+Curated from playtests (last update 2026-06-12, evening). **Effort**: S (under half a
 session) · M (a session) · L (multiple sessions) · XL (epic). **Priority**: P1
 (next up) · P2 (soon) · P3 (someday). Within each group, sorted by priority,
 then effort. Notes in *italics* are implementation thoughts for whoever (or
@@ -100,8 +100,25 @@ how-tos and `CLAUDE.md` for the contribution rules.
 - [x] QoL batch (PR #17): bless 25→40 / poison 4→7 / burn 3→5 turns (now
   in balance.ts), Settings deduped (loot automation lives in the Satchel
   bar), CRT filter ON by default.
+- [x] Shrines at full health on deliberate steps (PR #19); eHP health bars →
+  rebranded as **the Ward** (PR #20: grave-light, depth-dimming) → overlay
+  design (PR #22: one red HP pool, luminous sheen whose opacity = the real
+  reduction ratio, per-hit shards via the `wardhit` bus event, DoTs spawn
+  nothing) → numberless (PR #23: sheen + shards carry magnitude; thinning
+  log speaks only on tier crossings).
+- [x] Early-game lethality (PR #20): Ossified Hide halved, monster bases
+  HP 9→10.5 / ATK 3.2→3.6.
+- [x] Bone-scaling review (PR #24, phased & measured): report prints power
+  audits + race exponents; ferocity cost 1.17→1.28; vigor mirror rejected
+  by measurement; LEVEL_STAT_MULT 1.09→1.085; lock-in assertion: the wall
+  is never one-shot territory. Race now "in step" 2 of 3 cycles.
 
 ## Quick wins (S effort, mostly QoL)
+
+- [ ] **(P2, S) Per-hit ward float (optional)** — if the numberless ward
+  leaves players wanting a figure, the honest one is a pale "ward ate N"
+  float per landed hit (real damage prevented). *One emit already exists
+  (`wardhit`); add a float in ui.ts behind settings.particles.*
 
 - [ ] **(P2, S) Retroactive auto-scrap** — when the auto-scrap rule changes
   (or on pickup), items already in the satchel that fall under it get scrapped.
@@ -128,6 +145,14 @@ how-tos and `CLAUDE.md` for the contribution rules.
   monster curves / income growth / wrath slope / item budgets until the
   frontier stays lethal at every stage. Tie in the trial overhaul as the
   intended hard content.*
+- [ ] **(P1, M, needs human late-save) Bone income late-game check** — the
+  bone-scaling pass fixed the eff/cost legs; the income leg (Grand Ossuary
+  ×1.5^l max 30, bonePile/boneDrop) is unmeasurable by the 3-cycle robot.
+  Verify minutes-to-next-level stays sane at reaps 5+ on a real save; trim
+  Ossuary (×1.35 or lower max) if bones still firehose.
+- [ ] **(P2, S, validation) Deep-era field trip** — nobody has organically
+  visited the Drowned Archive (50+) or Ossuary City (100+); play a deep
+  Deep-Memory save and check palettes/natives/loot feel + era thresholds.
 - [ ] **(P2, M) More essence sinks** — e.g. *very slightly* increased trial
   and unique-drop chances, very expensive, carefully balanced. *New essence
   upgrades with tiny eff values; cap levels hard.*
