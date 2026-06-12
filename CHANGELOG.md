@@ -9,6 +9,11 @@ and bumps `src/core/version.ts` + `package.json`.
 
 ## [Unreleased]
 
+### Added
+
+- Dev room: a `peddler` button plants (or restocks) a stall beside the
+  hero for testing the mystery wares. (#41)
+
 ## [1.4.1] — 2026-06-13
 
 ### Fixed

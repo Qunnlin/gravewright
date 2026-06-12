@@ -5,7 +5,7 @@
  * regular game state — saves made while cheating are honestly cheated saves.
  */
 import type { Game } from '../core/game';
-import type { Floor, RunState, Slot } from '../core/types';
+import { TILE, type Floor, type RunState, type Slot } from '../core/types';
 import { bus, log } from '../core/events';
 import { spawnLootGoblin, spawnMonster, DEFAULT_MODS } from '../core/dungeon';
 import { rollItem } from '../core/data/items';
@@ -73,6 +73,7 @@ function render(): void {
       <button class="btn tiny" data-dev="spawn" data-id="mini">warden</button>
       <button class="btn tiny" data-dev="spawn" data-id="boss">boss</button>
       <button class="btn tiny" data-dev="goblin">goblin</button>
+      <button class="btn tiny" data-dev="peddler">peddler</button>
       <button class="btn tiny" data-dev="trial">trial next floor</button>
       <button class="btn tiny" data-dev="wrath">+1 wrath step</button>
       <button class="btn tiny" data-dev="biome" data-id="server">srv room</button>
@@ -155,6 +156,29 @@ function handle(act: string, id: string): void {
           const g = spawnLootGoblin(run.depth, spot.x, spot.y);
           g.awake = true;
           run.floor.monsters.push(g);
+        }
+      }
+      break;
+    case 'peddler':
+      if (run) {
+        const floor = run.floor;
+        if (floor.peddler) {
+          // already one on this floor: restock him
+          floor.peddler.stock = 3;
+          floor.peddler.autoBought = 0;
+          log('⚙ The Peddler restocks his sack.', 'system');
+        } else {
+          const spot = [[2, 0], [0, 2], [-2, 0], [0, -2], [1, 1], [-1, -1]]
+            .map(([dx, dy]) => ({ x: game.heroPos.x + dx, y: game.heroPos.y + dy }))
+            .find((pt) => pt.x > 0 && pt.y > 0 && pt.x < floor.w - 1 && pt.y < floor.h - 1 &&
+              floor.tiles[pt.y * floor.w + pt.x] === 1);
+          if (spot) {
+            floor.tiles[spot.y * floor.w + spot.x] = TILE.PEDDLER;
+            floor.peddler = { ...spot, stock: 3, autoBought: 0, spotted: true };
+            log('⚙ A peddler materializes, mildly offended by the summons.', 'system');
+          } else {
+            log('⚙ No open floor nearby for a stall.', 'system');
+          }
         }
       }
       break;
