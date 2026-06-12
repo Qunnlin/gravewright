@@ -20,6 +20,7 @@ export type GameEvent =
   | { type: 'trialResult'; won: boolean; piece?: string }
   | { type: 'offline'; ms: number; souls: number; bones: number }
   | { type: 'wardhit'; soaked: number }  // the ward ate part of a blow
+  | { type: 'peddler' }      // a deliberate step opened the Peddler's stall
   | { type: 'dirty' };       // something changed; UI should refresh panels
 
 type Handler = (e: GameEvent) => void;

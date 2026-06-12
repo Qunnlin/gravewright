@@ -9,6 +9,23 @@ and bumps `src/core/version.ts` + `package.json`.
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-06-13 · The Private Stock
+
+### Added
+
+- **The Peddler sells what no chest drops.** Each stall offers three
+  distinct wares from his catalogue (deliberate visits open a proper stall
+  modal; standing orders buy down the list; prices still double per sale):
+  - *A Wrapped Parcel* — the old mystery gear gamble (epic+, 10% legendary)
+  - *The Grave Compass* — this vessel always knows where the stairs are
+  - *Lantern Oil* — +2 vision for this vessel
+  - *Goblin Musk* — the next floor WILL hold a Loot Goblin
+  - *Sealed Draught* — drinks itself the first time a hit leaves the vessel
+    below a quarter health, restoring 40%
+  All effects are run-scoped curios — they die with the vessel. Ware
+  selection rides a side-draw so seeded balance runs stay byte-identical.
+  The dev-room peddler stocks the full catalogue. (#42)
+
 ### Added
 
 - Dev room: a `peddler` button plants (or restocks) a stall beside the
