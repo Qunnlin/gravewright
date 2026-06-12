@@ -158,6 +158,12 @@ describe('save round-trip', () => {
     }
   });
 
+  it('coerces the auto-trial standing order to a known value', () => {
+    expect(decodeSave(btoa(JSON.stringify({ v: 1 }))).settings.trialAuto).toBe('ask');
+    expect(decodeSave(btoa(JSON.stringify({ v: 1, settings: { trialAuto: 'accept' } }))).settings.trialAuto).toBe('accept');
+    expect(decodeSave(btoa(JSON.stringify({ v: 1, settings: { trialAuto: 'yolo' } }))).settings.trialAuto).toBe('ask');
+  });
+
   it('log filter toggles default on and survive round-trips', () => {
     const partial = { v: 1 };
     const d1 = decodeSave(btoa(JSON.stringify(partial)));

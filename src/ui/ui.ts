@@ -104,8 +104,21 @@ function onEvent(e: GameEvent): void {
       if (r) showToast(`❖ <b>${esc(r.name)}</b><br><small>${esc(r.desc)}</small>`, 'toast-relic');
       break;
     }
-    case 'trialOffer':
+    case 'trialOffer': {
       trialWasAuto = e.wasAuto;
+      // a standing order resolves autopilot wagers without the modal —
+      // playtest: auto runs got stuck on the offer screen
+      const order = game.state.settings.trialAuto;
+      if (e.wasAuto && order !== 'ask') {
+        if (order === 'accept') {
+          game.acceptTrial();
+          addLog('◈ The standing order holds: the wager is sworn.', 'mystic');
+        } else {
+          addLog('◈ The standing order holds: the vessel walks past the Hall.', 'system');
+        }
+        game.state.auto = true; // resume the march either way
+        break;
+      }
       showModal(`
         <h2>◈ The Sealed Hall</h2>
         <p class="intro-tag">the shrine hums with old wagers — the vessel holds its breath</p>
@@ -121,6 +134,7 @@ function onEvent(e: GameEvent): void {
         <button class="btn" data-act="trial-decline">Walk away</button>
       `);
       break;
+    }
     case 'trialResult':
       if (e.won) {
         showToast(`◈ <b class="rainbow-text">THE HALL YIELDS</b><br><small>The wager is won.</small>`, 'toast-relic');
@@ -329,6 +343,13 @@ function onClick(ev: MouseEvent): void {
       applyCrtFilter();
       queueRender();
       break;
+    case 'cycle-trialauto': {
+      const order = ['ask', 'accept', 'decline'] as const;
+      const cur = order.indexOf(game.state.settings.trialAuto);
+      game.state.settings.trialAuto = order[(cur + 1) % order.length];
+      queueRender();
+      break;
+    }
     case 'log-filter': {
       const key = ('log' + id[0].toUpperCase() + id.slice(1)) as 'logCombat' | 'logLoot' | 'logSystem';
       game.state.settings[key] = !game.state.settings[key];
@@ -1283,6 +1304,10 @@ function panelSettings(): string {
     <div class="hint">Loot automation (auto-equip, auto-scrap, protect tiers,
       vestige safety) lives where the loot does — the Satchel bar on the
       Vessel tab.</div>
+    <div class="setting-row" data-tip="Standing order for Sealed Hall wagers found on autopilot: ask (pause with the offer), always swear, or always walk past. Manual encounters always ask.">
+      <span>Auto-trial wagers</span>
+      <button class="btn" data-act="cycle-trialauto">${{ ask: 'ask me', accept: 'always swear', decline: 'always walk' }[s.settings.trialAuto]}</button>
+    </div>
     <div class="setting-row" data-tip="Forget every dismissed whisper; the contextual tutorial plays again as each mechanic comes up.">
       <span>Tutorial whispers</span>
       <button class="btn" data-act="tutorial-reset">Replay tutorial</button>

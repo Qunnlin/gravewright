@@ -84,6 +84,7 @@ export function defaultState(): GameState {
       crtFilter: true,
       logCombat: true, logLoot: true, logSystem: true,
       autoSpeed: 1,
+      trialAuto: 'ask',
     },
   };
 }
@@ -1768,7 +1769,11 @@ export class Game {
     // summoners raise help
     if (m.specials.includes('summon')) {
       m.summonCd--;
-      if (m.summonCd <= 0 && floor.monsters.length < 30 && distToHero <= 8) {
+      // the dead stay down while enough lessers stand — without this cap a
+      // lich re-raises faster than the procession can cut them down
+      const standing = floor.monsters.filter((x) => x.summoned && x.hp > 0).length;
+      if (m.summonCd <= 0 && standing < B.SUMMONED_CAP &&
+          floor.monsters.length < 30 && distToHero <= 8) {
         m.summonCd = 6;
         const spot = this.freeAdjacent(m.x, m.y, occupied);
         if (spot) {
