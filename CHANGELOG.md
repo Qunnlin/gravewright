@@ -9,6 +9,19 @@ and bumps `src/core/version.ts` + `package.json`.
 
 ## [Unreleased]
 
+## [1.5.2] — 2026-06-13
+
+### Fixed
+
+- **Reckless doctrine now actually rushes the stairs.** `rushStairs` was
+  set but never effective: the autopilot pursued *all* visible loot and
+  awake monsters across the whole floor before the descend decision ever
+  ran, so a reckless vessel still toured every gold pile — worst of all the
+  Admin, who sees the entire floor instantly. Now, once the stairs are in
+  sight, the descent is the goal and loot/fights are pursued only if they're
+  genuinely on the way (`hero→tile + tile→stairs ≤ hero→stairs + 4`). The
+  vessel beelines down, grabbing what it passes. (#44)
+
 ## [1.5.1] — 2026-06-13
 
 ### Balance
