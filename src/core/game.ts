@@ -1055,27 +1055,53 @@ export class Game {
       }
     }
 
+    // when the doctrine rushes the stairs and they're in sight, the descent
+    // is the goal — loot and fights are only worth it if they're no farther
+    // than the stairs themselves (i.e. genuinely on the way). This is what
+    // makes Reckless (and the all-seeing Admin) head straight down instead
+    // of crossing the whole floor for every gold pile.
+    const stairsSeen = floor.seen[floor.stairs.y * floor.w + floor.stairs.x] === 1;
+    const stairDist = dist[floor.stairs.y * floor.w + floor.stairs.x];
+    // >= 0 (not > 0): stay in rush mode even while standing ON the stairs
+    // (stairDist 0), so far loot can't lure the vessel back off them — the
+    // descend check below then fires
+    const rushing = strat.rushStairs && stairsSeen && stairDist >= 0;
+    // when rushing, a tile is "on the way" only if detouring to it barely
+    // lengthens the trip to the stairs: hero→tile + tile→stairs ≤ stairs +
+    // a small slack. That needs a distance field FROM the stairs too. A
+    // pure radius cap isn't enough — it would grab loot that's close but
+    // in the opposite direction.
+    const stairField = rushing ? bfsMap(floor, floor.stairs.x, floor.stairs.y) : null;
+    const RUSH_SLACK = 4; // ~two tiles out and back is still "on the way"
+    const onTheWay = (i: number, d: number): boolean => {
+      if (!rushing || !stairField) return true;
+      const toStairs = stairField[i];
+      return toStairs >= 0 && d + toStairs <= stairDist + RUSH_SLACK;
+    };
+
     // visible loot (and the soul well)
     let lootBest: { x: number; y: number; d: number } | null = null;
     for (const it of floor.items) {
       const i = it.y * floor.w + it.x;
       if (!floor.seen[i]) continue;
       const d = dist[i];
-      if (d > 0 && (lootBest === null || d < lootBest.d)) lootBest = { x: it.x, y: it.y, d };
+      if (d > 0 && onTheWay(i, d) && (lootBest === null || d < lootBest.d)) lootBest = { x: it.x, y: it.y, d };
     }
     if (floor.well && !floor.well.used) {
       const i = floor.well.y * floor.w + floor.well.x;
-      if (floor.seen[i] && dist[i] > 0 && (lootBest === null || dist[i] < lootBest.d)) {
+      if (floor.seen[i] && dist[i] > 0 && onTheWay(i, dist[i]) && (lootBest === null || dist[i] < lootBest.d)) {
         lootBest = { x: floor.well.x, y: floor.well.y, d: dist[i] };
       }
     }
 
-    // awake monsters: meet them head-on
+    // awake monsters: meet them head-on (only if not a detour past the stairs;
+    // anything blocking the path still gets bump-attacked en route)
     let monBest: { x: number; y: number; d: number } | null = null;
     for (const m of floor.monsters) {
       if (m.hp <= 0 || !m.awake) continue;
-      const d = dist[m.y * floor.w + m.x];
-      if (d > 0 && (monBest === null || d < monBest.d)) monBest = { x: m.x, y: m.y, d };
+      const mi = m.y * floor.w + m.x;
+      const d = dist[mi];
+      if (d > 0 && onTheWay(mi, d) && (monBest === null || d < monBest.d)) monBest = { x: m.x, y: m.y, d };
     }
 
     if (monBest && (lootBest === null || monBest.d <= lootBest.d)) {
@@ -1088,16 +1114,15 @@ export class Game {
     if (lootBest) {
       const step = this.firstStep(dist, lootBest.x, lootBest.y);
       if (step) {
-        this.goal = 'Looting';
+        this.goal = rushing ? 'Rushing — grabbing what’s on the way' : 'Looting';
         return step;
       }
     }
 
     // explore or descend
     const exploredFrac = this.exploredFrac();
-    const stairsSeen = floor.seen[floor.stairs.y * floor.w + floor.stairs.x] === 1;
     const wantStairs =
-      (strat.rushStairs && stairsSeen) ||
+      rushing ||
       exploredFrac >= strat.explorePct ||
       this.noUnseenReachable(dist);
 

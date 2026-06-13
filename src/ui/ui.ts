@@ -933,7 +933,7 @@ function panelVessel(): string {
     <div class="strat-row">
       ${stratBtn('cautious', 'Cautious', 'Explore 92% of each floor, heal below 55% HP')}
       ${stratBtn('balanced', 'Balanced', 'Explore 72% of each floor, heal below 40% HP')}
-      ${stratBtn('reckless', 'Reckless', 'Rush the stairs on sight, heal below 25% HP')}
+      ${stratBtn('reckless', 'Reckless', 'The moment the stairs are in sight, beeline for them — grabbing only loot and fights on the way. Heals below 25% HP.')}
     </div>
     ${(s.upgrades['ravenous'] ?? 0) > 0 ? `
     <div class="satchel-bar">
